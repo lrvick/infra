@@ -1,0 +1,3 @@
+[submodule "modules/vpc"]
+	path = modules/vpc
+	url = https://github.com/terraform-community-modules/tf_aws_vpc.git

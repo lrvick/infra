@@ -9,8 +9,10 @@ variable "cloudfront_price_class" {
 
 variable "logs_bucket" {
     description = "S3 bucket to store access logs in"
+    default = ""
 }
 
 variable "assets_bucket" {
     description = "S3 bucket to store site assets in"
+    default = ""
 }

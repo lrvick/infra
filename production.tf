@@ -66,6 +66,4 @@ resource "aws_key_pair" "admin" {
 module "personal-website" {
     source = "modules/s3_cloudfront_site"
     domain = "dev.lrvick.net"
-    logs_bucket = "lrvick-site-logs"
-    assets_bucket = "lrvick-site-assets"
 }

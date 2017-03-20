@@ -49,7 +49,7 @@ resource "aws_route53_record" "mx" {
 }
 
 module "vpc" {
-    source = "modules/vpc"
+    source = "../../modules/vpc"
     name = "production"
     cidr = "10.0.0.0/16"
     public_subnets = ["10.0.101.0/24", "10.0.102.0/24"]
@@ -60,10 +60,10 @@ module "vpc" {
 
 resource "aws_key_pair" "admin" {
     key_name = "admin"
-    public_key = "${file("files/lrvick.pub")}"
+    public_key = "${file("../../files/lrvick.pub")}"
 }
 
-module "personal-website" {
-    source = "modules/s3_cloudfront_site"
-    domain = "dev.lrvick.net"
-}
+#module "personal-website" {
+#    source = "modules/s3_cloudfront_site"
+#    domain = "lrvick.net"
+#}

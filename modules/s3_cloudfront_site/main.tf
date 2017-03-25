@@ -44,13 +44,10 @@ data "aws_iam_policy_document" "assets" {
             type = "AWS"
             identifiers = ["${aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn}"]
         }
-    }
-    statement {
-        actions = ["s3:ListBucket"]
-        resources = ["${aws_s3_bucket.assets.arn}"]
-        principals {
-            type = "AWS"
-            identifiers = ["${aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn}"]
+        condition {
+            test = "StringEquals"
+            variable = "aws:UserAgent"
+            values = ["CloudFront"]
         }
     }
 }
@@ -78,7 +75,15 @@ resource "aws_s3_bucket_policy" "redirect" {
 
 resource "aws_s3_bucket" "assets" {
     bucket = "${var.domain}"
-    acl = "private"
+    acl = "public-read"
+    website {
+        index_document = "index.html"
+        error_document = "404.html"
+    }
+    logging {
+        target_bucket = "${aws_s3_bucket.logs.bucket}"
+        target_prefix = "s3"
+    }
 }
 
 resource "aws_s3_bucket" "redirect" {
@@ -91,7 +96,7 @@ resource "aws_s3_bucket" "redirect" {
 
 resource "aws_s3_bucket" "logs" {
     bucket = "${var.domain}-logs"
-    acl = "private"
+    acl = "log-delivery-write"
 }
 
 resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
@@ -100,25 +105,33 @@ resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
 
 resource "aws_cloudfront_distribution" "assets" {
     origin {
-        domain_name = "${aws_s3_bucket.assets.bucket_domain_name}"
+        domain_name = "${aws_s3_bucket.assets.website_endpoint}"
         origin_id = "${var.domain}"
-        s3_origin_config {
-            origin_access_identity = "${aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path}"
+        custom_origin_config {
+            origin_protocol_policy = "http-only"
+            http_port = "80"
+            https_port = "443"
+            origin_ssl_protocols = ["TLSv1"]
+        }
+        custom_header {
+            name = "User-Agent"
+            value = "CloudFront"
         }
     }
     enabled = true
     is_ipv6_enabled = true
+    http_version = "http2"
     comment = "Static website for ${var.domain}"
     default_root_object = "index.html"
     logging_config {
         include_cookies = false
         bucket = "${aws_s3_bucket.logs.bucket_domain_name}"
-        prefix = "${var.domain}"
+        prefix = "cloudfront"
     }
     aliases = ["${var.domain}"]
     default_cache_behavior {
-        allowed_methods = ["GET", "HEAD"]
-        cached_methods = ["GET", "HEAD"]
+        allowed_methods = ["GET", "HEAD", "OPTIONS"]
+        cached_methods = ["GET", "HEAD", "OPTIONS"]
         compress = true
         target_origin_id = "${var.domain}"
         forwarded_values {
@@ -137,6 +150,11 @@ resource "aws_cloudfront_distribution" "assets" {
         geo_restriction {
             restriction_type = "none"
         }
+    }
+    custom_error_response {
+       error_code         = 404
+       response_code      = 200
+       response_page_path = "/404.html"
     }
     viewer_certificate {
         acm_certificate_arn = "${data.aws_acm_certificate.primary.arn}"

@@ -24,8 +24,6 @@ module "vpc" {
 module "droneci_balancer" {
     source = "../../modules/ecs_eip_balancer"
     domain = "ci.lrvick.net"
-    health_protocal = "http"
-    health_port = "443"
     name = "${module.droneci_cluster.name}"
     asg = "${module.droneci_cluster.asg_id}"
     cluster = "${module.droneci_cluster.id}"

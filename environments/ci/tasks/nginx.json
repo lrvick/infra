@@ -1,0 +1,20 @@
+[
+  {
+    "cpu": 256,
+    "essential": true,
+    "image": "nginx:latest",
+    "memory": 100,
+    "name": "nginx-latest",
+    "portMappings": [
+      { "containerPort": 80, "hostPort": 80 },
+      { "containerPort": 443, "hostPort": 443 }
+    ],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "${log_group_name}/nginx",
+            "awslogs-region": "${log_group_region}"
+        }
+    }
+  }
+]

@@ -16,13 +16,37 @@ resource "aws_security_group" "allow_all_internal" {
     }
 }
 
-resource "aws_security_group" "allow_all_ssh" {
+resource "aws_security_group" "allow_all_inbound_ssh" {
     name_prefix = "${var.vpc_id}-"
     description = "Allow all inbound SSH traffic"
     vpc_id = "${var.vpc_id}"
     ingress = {
         from_port = 22
         to_port = 22
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+resource "aws_security_group" "allow_all_inbound_http" {
+    name_prefix = "${var.vpc_id}-"
+    description = "Allow all inbound HTTP traffic"
+    vpc_id = "${var.vpc_id}"
+    ingress = {
+        from_port = 80
+        to_port = 80
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+resource "aws_security_group" "allow_all_inbound_https" {
+    name_prefix = "${var.vpc_id}-"
+    description = "Allow all inbound HTTPS traffic"
+    vpc_id = "${var.vpc_id}"
+    ingress = {
+        from_port = 443
+        to_port = 443
         protocol = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }

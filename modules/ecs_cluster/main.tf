@@ -62,6 +62,66 @@ resource "aws_autoscaling_group" "cluster" {
     }
 }
 
+resource "aws_iam_role" "hook" {
+    name = "${var.name}-hook"
+    assume_role_policy = "${data.aws_iam_policy_document.hook_assume_role.json}"
+}
+data "aws_iam_policy_document" "hook_assume_role" {
+    statement {
+        sid = ""
+        effect = "Allow"
+        principals {
+            type = "Service"
+            identifiers = ["autoscaling.amazonaws.com"]
+        }
+        actions = ["sts:AssumeRole"]
+    }
+}
+
+resource "aws_iam_role_policy" "hook" {
+    name = "${var.name}-instance"
+    role = "${aws_iam_role.hook.name}"
+    policy = "${data.aws_iam_policy_document.hook_policy.json}"
+}
+data "aws_iam_policy_document" "hook_policy" {
+    statement {
+        sid = ""
+        effect = "Allow"
+        resources =  [
+            "${aws_sns_topic.instance_launch.arn}",
+            "${aws_sns_topic.instance_terminate.arn}"
+        ]
+        actions = ["sns:Publish"]
+    }
+}
+
+resource "aws_sns_topic" "instance_launch" {
+  name = "${var.name}-instance-launch"
+}
+
+resource "aws_sns_topic" "instance_terminate" {
+  name = "${var.name}-instance-terminate"
+}
+
+resource "aws_autoscaling_lifecycle_hook" "instance_launch" {
+    name = "${var.name}-launch"
+    autoscaling_group_name = "${aws_autoscaling_group.cluster.name}"
+    default_result = "CONTINUE"
+    heartbeat_timeout = "${var.terminate_delay}"
+    lifecycle_transition = "autoscaling:EC2_INSTANCE_LAUNCHING" notification_target_arn = "${aws_sns_topic.instance_launch.arn}"
+    role_arn = "${aws_iam_role.hook.arn}"
+}
+
+resource "aws_autoscaling_lifecycle_hook" "instance_terminate" {
+    name = "${var.name}-terminate"
+    autoscaling_group_name = "${aws_autoscaling_group.cluster.name}"
+    default_result = "CONTINUE"
+    heartbeat_timeout = "${var.terminate_delay}"
+    lifecycle_transition = "autoscaling:EC2_INSTANCE_TERMINATING"
+    notification_target_arn = "${aws_sns_topic.instance_terminate.arn}"
+    role_arn = "${aws_iam_role.hook.arn}"
+}
+
 resource "aws_launch_configuration" "cluster" {
     name_prefix = "${var.name}"
     instance_type = "${var.instance_type}"

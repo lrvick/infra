@@ -12,4 +12,8 @@ variable "instances_max" { default = 1 }
 
 variable "instances_desired" { default = 1 }
 
+variable "terminate_delay" { default = 600 }
+
+variable "launch_delay" { default = 600 }
+
 variable "instance_type" { default = "t2.nano" }

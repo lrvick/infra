@@ -22,12 +22,10 @@ module "vpc" {
 }
 
 module "droneci_balancer" {
-    source = "../../modules/ecs_eip_balancer"
+    source = "../../modules/route53_balancer"
     domain = "ci.lrvick.net"
     name = "${module.droneci_cluster.name}"
     asg = "${module.droneci_cluster.asg_id}"
-    cluster = "${module.droneci_cluster.id}"
-    num_ips = "${module.droneci_cluster.instances_max + 1}"
 }
 
 module "droneci_cluster" {

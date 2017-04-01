@@ -107,8 +107,9 @@ resource "aws_autoscaling_lifecycle_hook" "instance_launch" {
     name = "${var.name}-launch"
     autoscaling_group_name = "${aws_autoscaling_group.cluster.name}"
     default_result = "CONTINUE"
-    heartbeat_timeout = "${var.terminate_delay}"
-    lifecycle_transition = "autoscaling:EC2_INSTANCE_LAUNCHING" notification_target_arn = "${aws_sns_topic.instance_launch.arn}"
+    heartbeat_timeout = "${var.launch_delay}"
+    lifecycle_transition = "autoscaling:EC2_INSTANCE_LAUNCHING"
+    notification_target_arn = "${aws_sns_topic.instance_launch.arn}"
     role_arn = "${aws_iam_role.hook.arn}"
 }
 

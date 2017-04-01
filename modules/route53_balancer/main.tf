@@ -32,16 +32,30 @@ resource "aws_lambda_permission" "sns_instance_terminate" {
     source_arn = "${data.aws_sns_topic.instance_terminate.arn}"
 }
 
+resource "aws_sns_topic_subscription" "asg_ip_attach" {
+  topic_arn = "${data.aws_sns_topic.instance_launch.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.asg_ip_attach.arn}"
+}
+
+resource "aws_sns_topic_subscription" "asg_ip_detach" {
+  topic_arn = "${data.aws_sns_topic.instance_terminate.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.asg_ip_detach.arn}"
+}
+
 resource "aws_lambda_function" "asg_ip_attach" {
     filename = "${data.archive_file.asg_ip_attach.output_path}"
     source_code_hash = "${data.archive_file.asg_ip_attach.output_base64sha256}"
     role = "${aws_iam_role.asg_ip_manage.arn}"
+    timeout = "10"
     function_name = "${var.name}-asg_ip_attach"
     handler = "index.handler"
     runtime = "python2.7"
     environment {
         variables = {
             domain = "${var.domain}",
+            hosted_zone = "${data.aws_route53_zone.selected.id}",
             asg = "${var.asg}",
             region = "${data.aws_region.selected.id}"
         }
@@ -52,12 +66,14 @@ resource "aws_lambda_function" "asg_ip_detach" {
     filename = "${data.archive_file.asg_ip_detach.output_path}"
     source_code_hash = "${data.archive_file.asg_ip_detach.output_base64sha256}"
     role = "${aws_iam_role.asg_ip_manage.arn}"
+    timeout = "10"
     function_name = "${var.name}-asg_ip_detach"
     handler = "index.handler"
     runtime = "python2.7"
     environment {
         variables = {
             domain = "${var.domain}",
+            hosted_zone = "${data.aws_route53_zone.selected.id}",
             asg = "${var.asg}",
             region = "${data.aws_region.selected.id}"
         }
@@ -90,6 +106,27 @@ data "aws_iam_policy_document" "asg_ip_manage_role_policy" {
             "logs:PutLogEvents",
         ]
         resources = ["arn:aws:logs:${data.aws_region.selected.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"]
+    }
+    statement {
+        effect = "Allow"
+        actions = [
+            "ec2:DescribeInstances",
+        ]
+        resources = ["*"]
+    }
+    statement {
+        effect = "Allow"
+        actions = [
+            "route53:ChangeResourceRecordSets"
+        ]
+        resources = ["arn:aws:route53:::hostedzone/${data.aws_route53_zone.selected.id}"]
+    }
+    statement {
+        effect = "Allow"
+        actions = [
+            "route53:GetChange",
+        ]
+        resources = ["arn:aws:route53:::change/*"]
     }
 }
 

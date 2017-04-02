@@ -2,19 +2,50 @@
   {
     "cpu": 256,
     "essential": true,
-    "image": "nginx:latest",
-    "memory": 100,
-    "name": "nginx-latest",
+    "image": "jwilder/nginx-proxy:alpine",
+    "memory": 50,
+    "name": "nginx-proxy",
     "portMappings": [
       { "containerPort": 80, "hostPort": 80 },
       { "containerPort": 443, "hostPort": 443 }
     ],
+    "mountPoints": [
+      { "sourceVolume":"docker_sock",
+        "containerPath":"/tmp/docker.sock",
+        "readOnly": true
+      }
+    ],
     "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-            "awslogs-group": "${log_group_name}",
-            "awslogs-region": "${log_group_region}"
-        }
+      "logDriver": "awslogs",
+      "options": {
+      "awslogs-group": "${log_group_name}",
+        "awslogs-region": "${log_group_region}"
+      }
+    }
+  },
+  { "cpu": 256,
+    "essential": true,
+    "image": "jwilder/whoami:latest",
+    "memory": 50,
+    "name": "droneci",
+    "environment": [
+      { "name": "VIRTUAL_HOST",
+        "value": "ci.lrvick.net"
+      },
+      { "name": "bar",
+        "value": "foo"
+      }
+    ],
+    "portMappings": [
+      { "containerPort": 8000, "hostPort": 8080 },
+      { "containerPort": 8000, "hostPort": 4443 }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${log_group_name}",
+        "awslogs-region": "${log_group_region}"
+      }
     }
   }
 ]

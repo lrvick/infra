@@ -29,20 +29,51 @@ data "aws_ami" "coreos_stable" {
     }
 }
 
-module "security_groups" {
-    source = "../security_groups"
+module "ec2_security_group" {
+    source = "../security_group"
     vpc_id = "${data.aws_vpc.selected.id}"
+    name = "${var.name}-ec2"
+    all_internal = true
+    all_outbound = true
+    all_inbound_ssh = true
+    all_inbound_http = true
+    all_inbound_https = true
+    group_inbound_nfs = true
+    group_inbound_nfs_id = "${module.efs_security_group.id}"
+}
+
+module "efs_security_group" {
+    source = "../security_group"
+    vpc_id = "${data.aws_vpc.selected.id}"
+    name = "${var.name}-efs"
+    group_outbound_nfs = true
+    group_outbound_nfs_id = "${module.ec2_security_group.id}"
 }
 
 data "template_file" "cloud_config" {
     template = "${file("${path.module}/cloud-config.yml")}"
     vars {
         aws_region = "${data.aws_region.selected.id}"
+        efs_id = "${aws_efs_file_system.shared.id}"
         ecs_cluster_name = "${aws_ecs_cluster.cluster.name}"
         ecs_log_level = "info"
         ecs_agent_version = "latest"
         ecs_log_group_name = "${aws_cloudwatch_log_group.ecs.name}"
     }
+}
+
+resource "aws_efs_file_system" "shared" {
+    creation_token = "persist"
+    tags {
+        Name = "${var.name}-shared"
+    }
+}
+
+resource "aws_efs_mount_target" "nfs" {
+    count = "${length(var.subnets)}"
+    file_system_id = "${aws_efs_file_system.shared.id}"
+    subnet_id = "${element(var.subnets, count.index)}"
+    security_groups = ["${module.efs_security_group.id}"]
 }
 
 resource "aws_autoscaling_group" "cluster" {
@@ -66,6 +97,7 @@ resource "aws_iam_role" "hook" {
     name = "${var.name}-hook"
     assume_role_policy = "${data.aws_iam_policy_document.hook_assume_role.json}"
 }
+
 data "aws_iam_policy_document" "hook_assume_role" {
     statement {
         sid = ""
@@ -83,6 +115,7 @@ resource "aws_iam_role_policy" "hook" {
     role = "${aws_iam_role.hook.name}"
     policy = "${data.aws_iam_policy_document.hook_policy.json}"
 }
+
 data "aws_iam_policy_document" "hook_policy" {
     statement {
         sid = ""
@@ -134,11 +167,7 @@ resource "aws_launch_configuration" "cluster" {
         create_before_destroy = true
     }
     security_groups = [
-        "${module.security_groups.allow_all_internal}",
-        "${module.security_groups.allow_all_outbound}",
-        "${module.security_groups.allow_all_inbound_ssh}",
-        "${module.security_groups.allow_all_inbound_http}",
-        "${module.security_groups.allow_all_inbound_https}"
+        "${module.ec2_security_group.id}"
     ]
 }
 

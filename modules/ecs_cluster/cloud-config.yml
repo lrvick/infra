@@ -5,6 +5,12 @@ coreos:
      command: stop
    - name: locksmithd.service
      command: stop
+   - name: mnt-shared.mount
+     content: |
+       [Mount]
+       What=${efs_id}.efs.${aws_region}.amazonaws.com:/
+       Where=/mnt/shared
+       Type=nfs
    - name: amazon-ecs-agent.service
      command: start
      runtime: true

@@ -53,6 +53,10 @@ resource "aws_ecs_service" "service" {
 resource "aws_ecs_task_definition" "service" {
     family = "${var.name}"
     container_definitions = "${data.template_file.task_definition.rendered}"
+    volume = {
+        name = "docker_sock",
+        host_path = "/var/run/docker.sock"
+    }
 }
 
 data "template_file" "task_definition" {

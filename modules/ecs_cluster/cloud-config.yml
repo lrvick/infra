@@ -6,6 +6,7 @@ coreos:
    - name: locksmithd.service
      command: stop
    - name: mnt-shared.mount
+     command: start
      content: |
        [Mount]
        What=${efs_id}.efs.${aws_region}.amazonaws.com:/

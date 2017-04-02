@@ -13,7 +13,7 @@ provider "aws" {
 
 module "vpc" {
     source = "../../modules/vpc"
-    name = "production"
+    name = "ci"
     cidr = "10.0.0.0/16"
     public_subnets = ["10.0.105.0/24", "10.0.106.0/24"]
     azs = ["us-west-2a", "us-west-2b"]
@@ -26,6 +26,8 @@ module "droneci_balancer" {
     domain = "ci.lrvick.net"
     name = "${module.droneci_cluster.name}"
     asg = "${module.droneci_cluster.asg_id}"
+    launch_topic = "${module.droneci_cluster.launch_topic}"
+    terminate_topic = "${module.droneci_cluster.terminate_topic}"
 }
 
 module "droneci_cluster" {

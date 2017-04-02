@@ -1,28 +1,4 @@
 [
-  {
-    "cpu": 256,
-    "essential": true,
-    "image": "jwilder/nginx-proxy:alpine",
-    "memory": 50,
-    "name": "nginx-proxy",
-    "portMappings": [
-      { "containerPort": 80, "hostPort": 80 },
-      { "containerPort": 443, "hostPort": 443 }
-    ],
-    "mountPoints": [
-      { "sourceVolume":"docker_sock",
-        "containerPath":"/tmp/docker.sock",
-        "readOnly": true
-      }
-    ],
-    "logConfiguration": {
-      "logDriver": "awslogs",
-      "options": {
-      "awslogs-group": "${log_group_name}",
-        "awslogs-region": "${log_group_region}"
-      }
-    }
-  },
   { "cpu": 256,
     "essential": true,
     "image": "jwilder/whoami:latest",
@@ -32,12 +8,14 @@
       { "name": "VIRTUAL_HOST",
         "value": "ci.lrvick.net"
       },
-      { "name": "bar",
-        "value": "foo"
+      { "name": "LETSENCRYPT_HOST",
+        "value": "ci.lrvick.net"
+      },
+      { "name": "LETSENCRYPT_EMAIL",
+        "value": "lance@lrvick.net"
       }
     ],
     "portMappings": [
-      { "containerPort": 8000, "hostPort": 8080 },
       { "containerPort": 8000, "hostPort": 4443 }
     ],
     "logConfiguration": {

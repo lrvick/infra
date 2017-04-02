@@ -1,0 +1,62 @@
+[
+  {
+    "cpu": 256,
+    "essential": true,
+    "memoryReservation": 50,
+    "image": "jwilder/nginx-proxy:alpine",
+    "name": "${cluster_name}-nginx-proxy",
+    "portMappings": [
+      { "containerPort": 80, "hostPort": 80 },
+      { "containerPort": 443, "hostPort": 443 }
+    ],
+    "mountPoints": [
+      { "sourceVolume":"docker_sock",
+        "containerPath":"/tmp/docker.sock",
+        "readOnly": true
+      },
+      { "sourceVolume":"${cluster_name}-https-proxy-certs",
+        "containerPath":"/etc/nginx/certs",
+        "readOnly": true
+      },
+      { "sourceVolume":"${cluster_name}-https-proxy-vhosts",
+        "containerPath":"/etc/nginx/vhost.d"
+      },
+      { "sourceVolume":"${cluster_name}-https-proxy-html",
+        "containerPath":"/usr/share/nginx/html"
+      }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+      "awslogs-group": "${log_group_name}",
+        "awslogs-region": "${log_group_region}"
+      }
+    }
+  },
+  {
+    "cpu": 256,
+    "memoryReservation": 50,
+    "essential": true,
+    "image": "jrcs/letsencrypt-nginx-proxy-companion:latest",
+    "name": "${cluster_name}-letsencrypt-nginx-proxy-companion",
+    "mountPoints": [
+      { "sourceVolume":"docker_sock",
+        "containerPath":"/var/run/docker.sock",
+        "readOnly": true
+      },
+      { "sourceVolume":"${cluster_name}-https-proxy-certs",
+        "containerPath":"/etc/nginx/certs"
+      }
+    ],
+    "volumesFrom": [
+      { "sourceContainer": "${cluster_name}-nginx-proxy" }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+      "awslogs-group": "${log_group_name}",
+        "awslogs-region": "${log_group_region}"
+      }
+    }
+  }
+]

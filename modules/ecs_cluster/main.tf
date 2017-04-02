@@ -1,7 +1,3 @@
-data "aws_vpc" "selected" {
-    id = "${var.vpc_id}"
-}
-
 data "aws_region" "selected" {
     current = true
 }
@@ -31,7 +27,7 @@ data "aws_ami" "coreos_stable" {
 
 module "ec2_security_group" {
     source = "../security_group"
-    vpc_id = "${data.aws_vpc.selected.id}"
+    vpc_id = "${var.vpc_id}"
     name = "${var.name}-ec2"
     all_internal = true
     all_outbound = true
@@ -44,10 +40,12 @@ module "ec2_security_group" {
 
 module "efs_security_group" {
     source = "../security_group"
-    vpc_id = "${data.aws_vpc.selected.id}"
+    vpc_id = "${var.vpc_id}"
     name = "${var.name}-efs"
     group_outbound_nfs = true
     group_outbound_nfs_id = "${module.ec2_security_group.id}"
+    group_inbound_nfs = true
+    group_inbound_nfs_id = "${module.ec2_security_group.id}"
 }
 
 data "template_file" "cloud_config" {
@@ -223,6 +221,49 @@ data "aws_iam_policy_document" "instance_role" {
             "arn:aws:logs:${data.aws_region.selected.id}:${data.aws_caller_identity.current.account_id}:log-group:${var.name}/*"
         ]
     }
+}
+
+resource "aws_ecs_service" "https-proxy" {
+    count = "${var.enable_https_proxy}"
+    name = "${var.name}-https-proxy"
+    cluster = "${var.name}"
+    task_definition = "${aws_ecs_task_definition.https-proxy.arn}"
+    desired_count = "${var.instances_desired}"
+}
+
+resource "aws_ecs_task_definition" "https-proxy" {
+    count = "${var.enable_https_proxy}"
+    family = "${var.name}-https-proxy"
+    container_definitions = "${data.template_file.https_proxy_task.rendered}"
+    volume = {
+        name = "docker_sock",
+        host_path = "/var/run/docker.sock"
+    },
+    volume = {
+        name = "${var.name}-https-proxy-certs",
+        host_path = "/mnt/shared/certs"
+    }
+    volume = {
+        name = "${var.name}-https-proxy-vhosts",
+    }
+    volume = {
+        name = "${var.name}-https-proxy-html",
+    }
+}
+
+data "template_file" "https_proxy_task" {
+    count = "${var.enable_https_proxy}"
+    template = "${file("${path.module}/https-proxy-task.json")}"
+    vars {
+        cluster_name = "${var.name}"
+        log_group_region = "${data.aws_region.selected.id}"
+        log_group_name = "${aws_cloudwatch_log_group.https-proxy.name}"
+    }
+}
+
+resource "aws_cloudwatch_log_group" "https-proxy" {
+    count = "${var.enable_https_proxy}"
+    name = "${var.name}/https-proxy"
 }
 
 resource "aws_cloudwatch_log_group" "ecs" {

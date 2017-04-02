@@ -13,6 +13,15 @@ output "asg_id" {
 output "instances_max" {
     value = "${var.instances_max}"
 }
+
 output "instances_min" {
     value = "${var.instances_min}"
+}
+
+output "launch_topic" {
+    value = "${aws_sns_topic.instance_launch.id}"
+}
+
+output "terminate_topic" {
+    value = "${aws_sns_topic.instance_terminate.id}"
 }

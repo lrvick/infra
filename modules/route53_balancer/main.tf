@@ -8,20 +8,12 @@ data "aws_route53_zone" "selected" {
     name = "${replace(var.domain, "/^.*\\.([^\\.]+)\\.([^\\.]+)$/", "$1.$2.")}"
 }
 
-data "aws_sns_topic" "instance_launch" {
-  name = "${var.name}-instance-launch"
-}
-
-data "aws_sns_topic" "instance_terminate" {
-  name = "${var.name}-instance-terminate"
-}
-
 resource "aws_lambda_permission" "sns_instance_launch" {
     statement_id = "AllowExecutionFromSNS"
     action = "lambda:InvokeFunction"
     function_name = "${aws_lambda_function.asg_ip_attach.function_name}"
     principal = "sns.amazonaws.com"
-    source_arn = "${data.aws_sns_topic.instance_launch.arn}"
+    source_arn = "${var.launch_topic}"
 }
 
 resource "aws_lambda_permission" "sns_instance_terminate" {
@@ -29,17 +21,17 @@ resource "aws_lambda_permission" "sns_instance_terminate" {
     action = "lambda:InvokeFunction"
     function_name = "${aws_lambda_function.asg_ip_detach.function_name}"
     principal = "sns.amazonaws.com"
-    source_arn = "${data.aws_sns_topic.instance_terminate.arn}"
+    source_arn = "${var.terminate_topic}"
 }
 
 resource "aws_sns_topic_subscription" "asg_ip_attach" {
-  topic_arn = "${data.aws_sns_topic.instance_launch.arn}"
+  topic_arn = "${var.launch_topic}"
   protocol  = "lambda"
   endpoint  = "${aws_lambda_function.asg_ip_attach.arn}"
 }
 
 resource "aws_sns_topic_subscription" "asg_ip_detach" {
-  topic_arn = "${data.aws_sns_topic.instance_terminate.arn}"
+  topic_arn = "${var.terminate_topic}"
   protocol  = "lambda"
   endpoint  = "${aws_lambda_function.asg_ip_detach.arn}"
 }

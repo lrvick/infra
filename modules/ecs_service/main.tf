@@ -47,15 +47,14 @@ resource "aws_ecs_service" "service" {
     cluster = "${var.cluster_name}"
     task_definition = "${aws_ecs_task_definition.service.arn}"
     desired_count = "${var.capacity}"
-    #iam_role = "${aws_iam_role.ecs.name}"
 }
 
 resource "aws_ecs_task_definition" "service" {
     family = "${var.name}"
     container_definitions = "${data.template_file.task_definition.rendered}"
     volume = {
-        name = "docker_sock",
-        host_path = "/var/run/docker.sock"
+        name = "${var.name}-data",
+        host_path = "/mnt/shared/${var.name}"
     }
 }
 

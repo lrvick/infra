@@ -42,5 +42,6 @@ module "droneci_service" {
     source = "../../modules/ecs_service"
     name = "droneci"
     cluster_name = "${module.droneci_cluster.name}"
-    task_file = "${path.root}/tasks/nginx.json"
+    task_file = "${path.root}/tasks/droneci.json"
+    kms_key_id = "5a5fecb6-77d2-42e9-82f1-884dbee74c76"
 }

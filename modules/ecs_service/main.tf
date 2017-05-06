@@ -33,12 +33,19 @@ data "aws_iam_policy_document" "service_role" {
     statement {
         effect = "Allow"
         actions = [
-            "kms:Decrypt"
+            "kms:Decrypt",
+            "kms:DescribeKey"
         ]
         resources = [
+            "arn:aws:kms:${data.aws_region.selected.id}:${data.aws_caller_identity.current.account_id}:key/${var.cluster_name}/${var.name}",
             "arn:aws:kms:${data.aws_region.selected.id}:${data.aws_caller_identity.current.account_id}:key/${var.kms_key_id}"
         ]
     }
+}
+
+resource "aws_kms_alias" "alias" {
+    name = "alias/${var.cluster_name}/${var.name}"
+    target_key_id = "${var.kms_key_id}"
 }
 
 resource "aws_ecs_service" "service" {
@@ -57,7 +64,11 @@ resource "aws_ecs_task_definition" "service" {
     }
     volume = {
         name = "${var.name}_data",
-        host_path = "/mnt/shared/${var.name}"
+        host_path = "/mnt/shared/${var.name}_data"
+    }
+    volume = {
+        name = "${var.name}_secrets",
+        host_path = "/mnt/shared/${var.name}_secrets"
     }
     task_role_arn = "${aws_iam_role.service.arn}"
 }

@@ -47,6 +47,8 @@ coreos:
         --env=ECS_DATADIR=/data \
         --env=ECS_CLUSTER=$${ECS_CLUSTER} \
         --env=ECS_AVAILABLE_LOGGING_DRIVERS='["awslogs"]' \
+        --env=ECS_ENABLE_TASK_IAM_ROLE='true' \
+        --env=ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST='true' \
         --log-driver=awslogs \
         --log-opt awslogs-region=${aws_region} \
         --log-opt awslogs-group=${ecs_log_group_name} \

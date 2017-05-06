@@ -206,9 +206,25 @@ data "aws_iam_policy_document" "instance_role" {
             "ecs:DiscoverPollEndpoint",
             "ecs:Poll",
             "ecs:RegisterContainerInstance",
-            "ecs:Submit*"
+            "ecs:StartTelemetrySession",
+            "ecs:Submit*",
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:GetDownloadUrlForLayer",
+            "ecr:BatchGetImage",
         ]
         resources = ["*"]
+    }
+    statement {
+        effect = "Allow"
+        actions = [
+            "kms:Decrypt",
+            "kms:DescribeKey"
+        ]
+        resources = [
+            "arn:aws:kms:${data.aws_region.selected.id}:${data.aws_caller_identity.current.account_id}:alias/${var.name}/*",
+            "arn:aws:kms:${data.aws_region.selected.id}:${data.aws_caller_identity.current.account_id}:key/5a5fecb6-77d2-42e9-82f1-884dbee74c76"
+        ]
     }
     statement {
         sid = "AllowLoggingToCloudWatch"

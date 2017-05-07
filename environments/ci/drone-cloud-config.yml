@@ -24,13 +24,36 @@ coreos:
       [Service]
       TimeoutStartSec=0
       ExecStart=/usr/bin/docker run \
-        --env "KMS_SECRETS_OUT_PATH=/secrets/secrets.env" \
         --env "AWS_DEFAULT_REGION=${aws_region}" \
         --env "KMS_DRONE_GITHUB_CLIENT=${kms_drone_github_client}" \
         --env "KMS_DRONE_GITHUB_SECRET=${kms_drone_github_secret}" \
         --env "KMS_DRONE_SECRET=${kms_drone_secret}" \
         --volume drone-server-secrets:/secrets \
-        lrvick/kms-decrypt
+        --volume /usr/bin/bash:/usr/bin/bash \
+        --volume /lib64:/lib64 \
+        --volume /home/core/scripts/decrypt.sh:/usr/bin/decrypt.sh \
+        --entrypoint /usr/bin/bash \
+        quay.io/coreos/awscli decrypt.sh "/secrets/secrets.env"
+  - name: drone-agent-secrets.service
+    enable: true
+    content: |
+      [Unit]
+      Description=DroneCI Agent Secrets Writer
+      Requires=docker.service
+      After=docker.service
+      [Install]
+      WantedBy=multi-user.target
+      [Service]
+      TimeoutStartSec=0
+      ExecStart=/usr/bin/docker run \
+        --env "AWS_DEFAULT_REGION=${aws_region}" \
+        --env "KMS_DRONE_SECRET=${kms_drone_secret}" \
+        --volume drone-agent-secrets:/secrets \
+        --volume /lib64:/lib64 \
+        --volume /usr/bin/bash:/usr/bin/bash \
+        --volume /home/core/scripts/decrypt.sh:/usr/bin/decrypt.sh \
+        --entrypoint /usr/bin/bash \
+        quay.io/coreos/awscli decrypt.sh "/secrets/secrets.env"
   - name: drone-server.service
     enable: true
     content: |
@@ -57,23 +80,6 @@ coreos:
         --env DRONE_ORGS="${drone_orgs}" \
         drone/drone "source /secrets/secrets.env; /usr/local/bin/droned"
       ExecStop=/usr/bin/docker stop %p
-  - name: drone-agent-secrets.service
-    enable: true
-    content: |
-      [Unit]
-      Description=DroneCI Agent Secrets Writer
-      Requires=docker.service
-      After=docker.service
-      [Install]
-      WantedBy=multi-user.target
-      [Service]
-      TimeoutStartSec=0
-      ExecStart=/usr/bin/docker run \
-        --env "KMS_SECRETS_OUT_PATH=/secrets/secrets.env" \
-        --env "AWS_DEFAULT_REGION=${aws_region}" \
-        --env "KMS_DRONE_SECRET=${kms_drone_secret}" \
-        --volume drone-agent-secrets:/secrets \
-        lrvick/kms-decrypt
   - name: drone-agent.service
     enable: true
     content: |
@@ -98,3 +104,26 @@ coreos:
         --env DRONE_SERVER=ws://drone-server:8000/ws/broker \
         drone/drone "source /config/secrets.env; /usr/local/bin/droned"
       ExecStop=/usr/bin/docker stop %p
+write_files:
+  - path: "/home/core/scripts/decrypt.sh"
+    permissions: "0755"
+    owner: "core"
+    content: |
+      #!/bin/bash
+      unset IFS
+      out_path=${1:-/out/secrets.env}
+      rm "$out_path" 2> /dev/null
+      for line in $(env | egrep '^KMS_'); do
+      	key="${line%%=*}"
+      	encrypted_value=${line#*=}
+      	decrypted_value_base64=$( \
+      		aws kms decrypt \
+      			--ciphertext-blob fileb://<(echo "$encrypted_value" | base64 -d) \
+      			--query Plaintext \
+      			--output text
+      	)
+      	decrypted_value=$(echo $decrypted_value_base64 | base64 -d)
+      	echo "key=$key"
+      	echo "encrypted_value=$encrypted_value"
+      	echo "export $key=$decrypted_value" >> "$out_path"
+      done

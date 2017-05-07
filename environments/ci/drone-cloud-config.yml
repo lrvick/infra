@@ -1,17 +1,17 @@
 #cloud-config
 coreos:
   units:
-   - name: update-engine.service
-     command: stop
-   - name: locksmithd.service
-     command: stop
-   - name: mnt-shared.mount
-     command: start
-     content: |
-       [Mount]
-       What=${efs_id}.efs.${aws_region}.amazonaws.com:/
-       Where=/mnt/shared
-       Type=nfs
+  - name: update-engine.service
+    command: stop
+  - name: locksmithd.service
+    command: stop
+  - name: mnt-shared.mount
+    command: start
+    content: |
+      [Mount]
+      What=${efs_id}.efs.${aws_region}.amazonaws.com:/
+      Where=/mnt/shared
+      Type=nfs
   - name: drone-data.service
     enable: true
     content: |

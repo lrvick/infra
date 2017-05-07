@@ -12,28 +12,13 @@ coreos:
       What=${efs_id}.efs.${aws_region}.amazonaws.com:/
       Where=/mnt/shared
       Type=nfs
-  - name: drone-data.service
-    enable: true
-    content: |
-      [Unit]
-      Description=DroneCI Data volume
-      After=docker.service
-      Requires=docker.service
-      [Install]
-      WantedBy=multi-user.target
-      [Service]
-      TimeoutStartSec=0
-      ExecStart=/usr/bin/docker run \
-        --name %p \
-        --volume /mnt/shared/drone:/var/lib/drone \
-        busybox /usr/bin/tail -f /dev/null
-  - name: drone-server-config.service
+  - name: drone-server-secrets.service
     enable: true
     content: |
       [Unit]
       Description=DroneCI Server Secrets Writer
-      Requires=drone-data.service
-      After=drone-data.service
+      After=docker.service
+      Requires=docker.service
       [Install]
       WantedBy=multi-user.target
       [Service]
@@ -63,7 +48,7 @@ coreos:
       ExecStartPre=/usr/bin/docker pull drone/drone:0.5
       ExecStart=/usr/bin/docker run \
         --name %p \
-        --volumes-from drone-data \
+        --volume /mnt/shared/drone:/var/lib/drone \
         --volumes-from drone-server-secrets \
         --entrypoint "/bin/sh -c"
         --port 80:8000 \
@@ -77,8 +62,8 @@ coreos:
     content: |
       [Unit]
       Description=DroneCI Agent Secrets Writer
-      Requires=drone-data.service
-      After=drone-data.service
+      Requires=docker.service
+      After=docker.service
       [Install]
       WantedBy=multi-user.target
       [Service]
@@ -106,7 +91,7 @@ coreos:
       ExecStartPre=/usr/bin/docker pull drone/drone:0.5
       ExecStart=/usr/bin/docker run \
         --name %p \
-        --volumes-from drone-data \
+        --volumes-from drone-server \
         --volumes-from drone-agent-secrets \
         --volume /var/run/docker.sock:/var/run/docker.sock \
         --entrypoint "/bin/sh -c" \

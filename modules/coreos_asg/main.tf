@@ -202,7 +202,7 @@ data "aws_iam_policy_document" "instance_role" {
             "kms:DescribeKey"
         ]
         resources = [
-            "arn:aws:kms:${data.aws_region.selected.id}:${data.aws_caller_identity.current.account_id}:key/${var.kms_key_id}/*",
+            "arn:aws:kms:${data.aws_region.selected.id}:${data.aws_caller_identity.current.account_id}:key/${var.kms_key_id}",
         ]
     }
     statement {

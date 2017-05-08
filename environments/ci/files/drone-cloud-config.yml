@@ -1,4 +1,5 @@
 #cloud-config
+hostname: "drone"
 coreos:
   units:
   - name: update-engine.service
@@ -56,6 +57,7 @@ coreos:
         quay.io/coreos/awscli decrypt.sh "/secrets/secrets.env"
   - name: drone-server.service
     enable: true
+    command: start
     content: |
       [Unit]
       Description=Drone CI Server
@@ -68,20 +70,26 @@ coreos:
       TimeoutStartSec=0
       ExecStartPre=-/usr/bin/docker kill %p
       ExecStartPre=-/usr/bin/docker rm %p
-      ExecStartPre=/usr/bin/docker pull drone/drone:0.5
+      ExecStartPre=/usr/bin/docker pull drone/drone:0.6
       ExecStart=/usr/bin/docker run \
         --name %p \
         --volume /mnt/shared/drone:/var/lib/drone \
-        --volumes-from drone-server-secrets \
-        --entrypoint "/bin/sh -c"
-        --port 80:8000 \
+        --volume drone-server-secrets:/secrets/ \
+        --volume /lib64:/lib64 \
+        --volume /usr/bin/bash:/usr/bin/bash \
+        --entrypoint="/usr/bin/bash" \
+        --expose 8000 \
         --env DRONE_OPEN=true \
-        --env GITHUB=true \
-        --env DRONE_ORGS="${drone_orgs}" \
-        drone/drone "source /secrets/secrets.env; /usr/local/bin/droned"
+        --env DRONE_GITHUB=true \
+        --env VIRTUAL_HOST=${domain} \
+        --env VIRTUAL_PORT=8000 \
+        --env LETSENCRYPT_HOST=${domain} \
+        --env LETSENCRYPT_EMAIL=${letsencrypt_email} \
+        drone/drone -c 'source /secrets/secrets.env; /drone server'
       ExecStop=/usr/bin/docker stop %p
   - name: drone-agent.service
     enable: true
+    command: start
     content: |
       [Unit]
       Description=Drone CI Agent
@@ -94,36 +102,70 @@ coreos:
       TimeoutStartSec=0
       ExecStartPre=-/usr/bin/docker kill %p
       ExecStartPre=-/usr/bin/docker rm %p
-      ExecStartPre=/usr/bin/docker pull drone/drone:0.5
+      ExecStartPre=/usr/bin/docker pull drone/drone:0.6
       ExecStart=/usr/bin/docker run \
         --name %p \
         --volumes-from drone-server \
-        --volumes-from drone-agent-secrets \
+        --volume drone-agent-secrets:/secrets/ \
+        --volume /lib64:/lib64 \
+        --volume /usr/bin/bash:/usr/bin/bash \
+        --entrypoint="/usr/bin/bash" \
         --volume /var/run/docker.sock:/var/run/docker.sock \
-        --entrypoint "/bin/sh -c" \
         --env DRONE_SERVER=ws://drone-server:8000/ws/broker \
-        drone/drone "source /config/secrets.env; /usr/local/bin/droned"
+        drone/drone -c 'source /secrets/secrets.env; /drone agent'
+      ExecStop=/usr/bin/docker stop %p
+  - name: nginx-proxy.service
+    enable: true
+    command: start
+    content: |
+      [Unit]
+      Description=Nginx Proxy
+      Requires=drone-server.service
+      After=drone-server.service
+      [Install]
+      WantedBy=multi-user.target
+      [Service]
+      Restart=always
+      TimeoutStartSec=0
+      ExecStartPre=-/usr/bin/docker kill %p
+      ExecStartPre=-/usr/bin/docker rm %p
+      ExecStartPre=/usr/bin/docker pull jwilder/nginx-proxy:alpine
+      ExecStart=/usr/bin/docker run \
+        --name %p \
+        --volume /mnt/shared/nginx-proxy-certs:/etc/nginx/certs \
+        --volume /mnt/shared/nginx-proxy-vhosts:/etc/nginx/vhost.d \
+        --volume /mnt/shared/nginx-proxy-html:/usr/share/nginx/html \
+        --volume /var/run/docker.sock:/tmp/docker.sock:ro \
+        --label com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true \
+         -p 80:80 \
+         -p 443:443 \
+        jwilder/nginx-proxy:alpine
+      ExecStop=/usr/bin/docker stop %p
+  - name: nginx-proxy-https.service
+    enable: true
+    command: start
+    content: |
+      [Unit]
+      Description=Nginx Proxy HTTPS Companion
+      Requires=nginx-proxy.service
+      After=nginx-proxy.service
+      [Install]
+      WantedBy=multi-user.target
+      [Service]
+      Restart=always
+      TimeoutStartSec=0
+      ExecStartPre=-/usr/bin/docker kill %p
+      ExecStartPre=-/usr/bin/docker rm %p
+      ExecStartPre=/usr/bin/docker pull jrcs/letsencrypt-nginx-proxy-companion:latest
+      ExecStart=/usr/bin/docker run \
+        --name %p \
+        --volumes-from nginx-proxy \
+        --volume /var/run/docker.sock:/var/run/docker.sock:ro \
+        jrcs/letsencrypt-nginx-proxy-companion:latest
       ExecStop=/usr/bin/docker stop %p
 write_files:
   - path: "/home/core/scripts/decrypt.sh"
     permissions: "0755"
     owner: "core"
-    content: |
-      #!/bin/bash
-      unset IFS
-      out_path=${1:-/out/secrets.env}
-      rm "$out_path" 2> /dev/null
-      for line in $(env | egrep '^KMS_'); do
-      	key="${line%%=*}"
-      	encrypted_value=${line#*=}
-      	decrypted_value_base64=$( \
-      		aws kms decrypt \
-      			--ciphertext-blob fileb://<(echo "$encrypted_value" | base64 -d) \
-      			--query Plaintext \
-      			--output text
-      	)
-      	decrypted_value=$(echo $decrypted_value_base64 | base64 -d)
-      	echo "key=$key"
-      	echo "encrypted_value=$encrypted_value"
-      	echo "export $key=$decrypted_value" >> "$out_path"
-      done
+    encoding: base64
+    content: ${base64encode(decrypt_script)}

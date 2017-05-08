@@ -51,6 +51,6 @@ data "template_file" "cloud_config" {
         decrypt_script = "${file("${path.module}/files/decrypt.sh")}"
         efs_id = "${module.drone_asg.efs_id}"
         domain = "ci.lrvick.net"
-        letsencrypt_email = "lance@lrvick.net"
+        drone_admins = "lrvick"
     }
 }

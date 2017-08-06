@@ -11,8 +11,7 @@ Resources:
   ConfigureMFAPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
-      ManagedPolicyNme:
-      PolicyName: "ConfigureMFA"
+      ManagedPolicyName: "ConfigureMFA"
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -44,14 +43,14 @@ Resources:
   UserGroup:
     Type: "AWS::IAM::Group"
     Properties:
-      GroupName: "Users"
+      GroupName: "User"
       ManagedPolicyArns:
         - !Ref "ConfigureMFAPolicy"
 
   AdminGroup:
     Type: "AWS::IAM::Group"
     Properties:
-      GroupName: "Admins"
+      GroupName: "Admin"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/AdministratorAccess"
       Policies:
@@ -65,11 +64,33 @@ Resources:
                 Resource:
                   - "*"
 
+  BillingGroup:
+    Type: "AWS::IAM::Group"
+    Properties:
+      GroupName: "Billing"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AdministratorAccess"
+      Policies:
+        - PolicyName: "BillingAccess"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+                - aws-portal:*Billing
+                - aws-portal:*Usage
+                - aws-portal:*PaymentMethods
+                - budgets:ViewBudget
+                - budgets:ModifyBudget
+              Resource: "*"
+
   lrvick:
     Type: "AWS::IAM::User"
-    LoginProfile:
-      Password: !Sub "${TemporaryPassword}"
-      PasswordResetRequired: "Yes"
-    Groups:
-      - "Users"
-      - "Admins"
+    Properties:
+      LoginProfile:
+        Password: !Sub "${TemporaryPassword}"
+        PasswordResetRequired: true
+      Groups:
+        - "User"
+        - "Admin"
+        - "Billing"

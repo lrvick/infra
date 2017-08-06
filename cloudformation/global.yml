@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  TemporaryPassword:
+    Type: String
+    Description: Temporary password for new administrator.
+    Default: "${AWS::StackName}"
+
+Resources:
+
+  ConfigureMFAPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyNme:
+      PolicyName: "ConfigureMFA"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - iam:CreateVirtualMFADevice
+              - iam:EnableMFADevice
+              - iam:ResyncMFADevice
+              - iam:DeleteVirtualMFADevice
+            Resource:
+              - arn:aws:iam::account-id-without-hyphens:mfa/${aws:username}
+              - arn:aws:iam::account-id-without-hyphens:user/${aws:username}
+          - Effect: Allow
+            Action:
+              - iam:DeactivateMFADevice
+            Resource:
+              - arn:aws:iam::account-id-without-hyphens:mfa/${aws:username}
+              - arn:aws:iam::account-id-without-hyphens:user/${aws:username}
+            Condition:
+              Bool:
+                aws:MultiFactorAuthPresent: true
+          - Effect: Allow
+            Action:
+              - iam:ListMFADevices
+              - iam:ListVirtualMFADevices
+              - iam:ListUsers
+            Resource: "*"
+
+  UserGroup:
+    Type: "AWS::IAM::Group"
+    Properties:
+      GroupName: "Users"
+      ManagedPolicyArns:
+        - !Ref "ConfigureMFAPolicy"
+
+  AdminGroup:
+    Type: "AWS::IAM::Group"
+    Properties:
+      GroupName: "Admins"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AdministratorAccess"
+      Policies:
+        - PolicyName: "AdministratorAccess"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "*"
+                Resource:
+                  - "*"
+
+  lrvick:
+    Type: "AWS::IAM::User"
+    LoginProfile:
+      Password: !Sub "${TemporaryPassword}"
+      PasswordResetRequired: "Yes"
+    Groups:
+      - "Users"
+      - "Admins"

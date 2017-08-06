@@ -12,26 +12,47 @@ everything and needs every little detail laid out for him.
 
 ## Setup
 
-Create DynamoDB table and versioned S3 bucket to store Terraform state:
+Do all required bootstrapping for new AWS account.
 
 ```
-export TF_PREFIX="lrvick-production"
-aws s3api create-bucket \
-  --bucket "$TF_PREFIX-terraform" \
-  --region us-west-2 \
-  --create-bucket-configuration LocationConstraint=us-west-2
-aws s3api put-bucket-versioning \
-  --bucket "$TF_PREFIX-terraform" \
-  --versioning-configuration Status=Enabled
-aws dynamodb create-table \
-  --table-name "$TF_PREFIX-terraform" \
-  --attribute-definitions "AttributeName=LockID,AttributeType=S" \
-  --key-schema "AttributeName=LockID,KeyType=HASH" \
-  --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+make bootstrap
 ```
 
-Now you can fill in all remaining config and deploy infra with:
+This process will create users as defined in cloudformation/global.yml
+
+Each user will need to do some manual steps before using their account:
+
+1. Change password at [https://<account>.signin.aws.amazon.com]
+2. Generate access keys
+3. Configure CLI with access keys:
+  ```
+  aws configure
+  ```
+4. Bind MFA device to account:
+  ```
+  aws iam create-virtual-mfa-device \
+    --virtual-mfa-device-name lrvick-yubikey \
+    --bootstrap-method Base32StringSeed
+  aws iam enable-mfa-device \
+    --user-name lrvick \
+    --serial-number arn:aws:iam::210987654321:mfa/lrvick-yubikey \
+    --authentication-code-1 123456 \
+    --authentication-code-2 789012
+  ```
+
+## Usage
+
+Initialize a session token via your MFA device:
 
 ```
-terraform apply
+aws sts get-session-token \
+  --serial-number arn-of-the-mfa-device \
+  --token-code code-from-token
+export AWS_SESSION_TOKEN=<Session-Token-as-in-Previous-Output>
+```
+
+Change terraform configuration as desired and apply changes with:
+
+```
+make apply
 ```

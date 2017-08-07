@@ -12,7 +12,7 @@ everything and needs every little detail laid out for him.
 
 ## Setup
 
-### Account Setup
+### AWS Account Setup
 
 This should be the only time root credentials for the master account are ever
 required.
@@ -38,7 +38,7 @@ required.
 6. Delete root Access Keys
   See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html?icmpid=docs_iam_console#id_root-user_manage_add-key]
 
-### User Setup
+### AWS User Setup
 
 Each user will need to do some one-time manual steps before using their
 account.

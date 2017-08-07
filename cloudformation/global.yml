@@ -51,8 +51,6 @@ Resources:
     Type: "AWS::IAM::Group"
     Properties:
       GroupName: "Admin"
-      ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/AdministratorAccess"
       Policies:
         - PolicyName: "AdministratorAccess"
           PolicyDocument:

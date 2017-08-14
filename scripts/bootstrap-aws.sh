@@ -1,18 +1,6 @@
 #!/bin/bash
 set -e
 
-# Get account id by name
-get_account_id(){
-	aws organizations list-accounts \
-		| jq -r ".[] [] | select(.Name == \"$1\").Id"
-}
-
-# Deploy cloudformation rules for Root account
-aws cloudformation deploy \
-	--template-file cloudformation/global.yml \
-	--stack-name global \
-	--capabilities CAPABILITY_NAMED_IAM
-
 # Create CI/Environment Accounts
 aws organizations create-account \
 	--email aws-ci@lrvick.net \
@@ -26,6 +14,12 @@ aws organizations create-account \
 aws organizations create-account \
 	--email aws-development@lrvick.net \
 	--account-name "development"
+
+# Get account id by name
+get_account_id(){
+	aws organizations list-accounts \
+		| jq -r ".[] [] | select(.Name == \"$1\").Id"
+}
 
 # Create CI Organizational Units
 root_ou_id="$(aws organizations list-roots | jq -r '.Roots[].Id')"

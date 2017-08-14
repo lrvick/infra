@@ -34,6 +34,14 @@ resource "aws_route53_record" "base" {
     records = ["104.207.150.22"]
 }
 
+resource "aws_route53_record" "keybase" {
+    zone_id = "${aws_route53_zone.personal.zone_id}"
+    name = "@"
+    type = "TXT"
+    ttl = "300"
+    records = ["keybase-site-verification=j7Z3S6y4ynbSXqi68QSLGErhBeRMrRQi_EIIPkcU3HE"]
+}
+
 resource "aws_route53_record" "mx" {
     zone_id = "${aws_route53_zone.personal.zone_id}"
     name = "${aws_route53_zone.personal.name}"
@@ -52,7 +60,7 @@ module "vpc" {
     source = "../../modules/vpc"
     name = "production"
     cidr = "10.0.0.0/16"
-    public_subnets = ["10.0.101.0/24", "10.0.102.0/24"]
+    public_subnets = ["10.0.103.0/24", "10.0.104.0/24"]
     azs = ["us-west-2a", "us-west-2b"]
     enable_dns_hostnames = "true"
     enable_dns_support = "true"

@@ -22,7 +22,7 @@ module "vpc" {
     source = "../../modules/vpc"
     name = "staging"
     cidr = "10.0.0.0/16"
-    public_subnets = ["10.0.103.0/24", "10.0.104.0/24"]
+    public_subnets = ["10.0.105.0/24", "10.0.106.0/24"]
     azs = ["us-west-2a", "us-west-2b"]
     enable_dns_hostnames = "true"
     enable_dns_support = "true"

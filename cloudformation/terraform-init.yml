@@ -1,21 +1,17 @@
 # Seed an AWS account to get it ready for terraform
 AWSTemplateFormatVersion: "2010-09-09"
 
-Parameters:
-  AccountName:
-    Type: String
-    Description: Name for account.
-    Default: "${AWS::StackName}"
-
 Resources:
 
   # Bucket for storing Terraform state files:
   TerraformBucket:
     Type: "AWS::S3::Bucket"
     Properties:
-      BucketName: !Sub "${AccountName}-terraform"
+      BucketName:
+        Fn::Sub: "${AWS::StackName}-terraform"
       LoggingConfiguration:
-        DestinationBucketName: !Ref TerraformLogBucket
+        DestinationBucketName:
+          Ref: TerraformLogBucket
       VersioningConfiguration:
         Status: "Enabled"
       LifecycleConfiguration:
@@ -34,7 +30,8 @@ Resources:
           - Action: "s3:Delete*"
             Effect: "Deny"
             Principal: "*"
-            Resource: !Sub "arn:aws:s3:::${TerraformBucket}/*"
+            Resource:
+              Fn::Sub: "arn:aws:s3:::${TerraformBucket}/*"
             Condition:
               BoolIfExists:
                 aws:MultiFactorAuthPresent: false
@@ -43,7 +40,8 @@ Resources:
   TerraformLogBucket:
     Type: "AWS::S3::Bucket"
     Properties:
-      BucketName: !Sub "${AccountName}-terraform-logs"
+      BucketName:
+        Fn::Sub: "${AWS::StackName}-terraform-logs"
       AccessControl: "LogDeliveryWrite"
       LifecycleConfiguration:
         Rules:
@@ -61,7 +59,8 @@ Resources:
             - Action: "s3:Delete*"
               Effect: "Deny"
               Principal: "*"
-              Resource: !Sub "arn:aws:s3:::${TerraformLogBucket}/*"
+              Resource:
+                Fn::Sub: "arn:aws:s3:::${TerraformLogBucket}/*"
               Condition:
                 BoolIfExists:
                   aws:MultiFactorAuthPresent: false
@@ -71,7 +70,8 @@ Resources:
     DeletionPolicy: Retain
     Type: "AWS::S3::Bucket"
     Properties:
-      BucketName: !Sub "${AccountName}-terraform-cloudtrail"
+      BucketName:
+        Fn::Sub: "${AWS::StackName}-terraform-cloudtrail"
       LifecycleConfiguration:
         Rules:
           - Id: "ExpirationRule"
@@ -89,12 +89,14 @@ Resources:
             Principal:
               Service: "cloudtrail.amazonaws.com"
             Action: "s3:GetBucketAcl"
-            Resource: !Sub "arn:aws:s3:::${TerraformCloudTrailBucket}"
+            Resource:
+              Fn::Sub: "arn:aws:s3:::${TerraformCloudTrailBucket}"
           - Effect: "Allow"
             Principal:
               Service: "cloudtrail.amazonaws.com"
             Action: "s3:PutObject"
-            Resource: !Sub "arn:aws:s3:::${TerraformCloudTrailBucket}/AWSLogs/${AWS::AccountId}/*"
+            Resource:
+              Fn::Sub: "arn:aws:s3:::${TerraformCloudTrailBucket}/AWSLogs/${AWS::AccountId}/*"
             Condition:
               StringEquals:
                 s3:x-amz-acl: "bucket-owner-full-control"
@@ -102,7 +104,8 @@ Resources:
           - Effect: "Deny"
             Principal: "*"
             Action: "s3:Delete*"
-            Resource: !Sub "arn:aws:s3:::${TerraformCloudTrailBucket}/*"
+            Resource:
+              Fn::Sub: "arn:aws:s3:::${TerraformCloudTrailBucket}/*"
             Condition:
               BoolIfExists:
                 aws:MultiFactorAuthPresent: false
@@ -115,19 +118,22 @@ Resources:
       - TerraformCloudTrailBucketPolicy
     Properties:
       IncludeGlobalServiceEvents: true
-      S3BucketName: !Ref TerraformCloudTrailBucket
+      S3BucketName:
+        Ref: TerraformCloudTrailBucket
       IsLogging: true
       IsMultiRegionTrail: true
       EnableLogFileValidation: true
       Tags:
         - Key: Name
-          Value: !Sub "${AccountName}-terraform"
+          Value:
+            Fn::Sub: "${AWS::StackName}-terraform"
 
   # DynamoDB Table for Terraform locking/consistency
   TerraformDynamoDBTable:
     Type: "AWS::DynamoDB::Table"
     Properties:
-      TableName: !Sub "${AccountName}-terraform"
+      TableName:
+        Fn::Sub: "${AWS::StackName}-terraform"
       AttributeDefinitions:
         - AttributeName: "LockID"
           AttributeType: "S"

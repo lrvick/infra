@@ -147,7 +147,7 @@ data "aws_iam_policy_document" "require_mfa" {
     condition = {
       test = "Null"
       variable = "aws:MultiFactorAuthAge"
-      values = [true]
+      values = ["true"]
     }
   }
   statement {
@@ -173,7 +173,7 @@ data "aws_iam_policy_document" "require_mfa" {
     condition = {
       test = "Null"
       variable = "aws:MultiFactorAuthAge"
-      values = [true]
+      values = ["true"]
     }
   }
 }

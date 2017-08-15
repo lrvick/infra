@@ -55,24 +55,30 @@ Each user will need to do some one-time manual steps before using their
 account.
 
 1. Change account password
-  See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_passwords_user-change-own.html]
+
+    See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_passwords_user-change-own.html]
+
 2. Generate access keys (Optional)
-  See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html]
+
+    See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html]
+
 3. Configure CLI with access keys (Optional)
-  ```
-  aws configure
-  ```
+
+    ```
+    aws configure
+    ```
 4. Bind MFA device to account:
-  ```
-  aws iam create-virtual-mfa-device \
-    --virtual-mfa-device-name lrvick-yubikey \
-    --bootstrap-method Base32StringSeed
-  aws iam enable-mfa-device \
-    --user-name lrvick \
-    --serial-number arn:aws:iam::210987654321:mfa/lrvick-yubikey \
-    --authentication-code-1 123456 \
-    --authentication-code-2 789012
-  ```
+
+    ```
+    aws iam create-virtual-mfa-device \
+      --virtual-mfa-device-name lrvick-yubikey \
+      --bootstrap-method Base32StringSeed
+    aws iam enable-mfa-device \
+      --user-name lrvick \
+      --serial-number arn:aws:iam::210987654321:mfa/lrvick-yubikey \
+      --authentication-code-1 123456 \
+      --authentication-code-2 789012
+    ```
 
 ## Usage
 

@@ -19,25 +19,25 @@ required.
 
 1. Create AWS Organization
 
-  See: [http://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_create.html]
+    See: [http://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_create.html]
 
-  Be sure and choose "Enable All Features"
+    Be sure and choose "Enable All Features"
 
 2. Enable IAM managed billing
 
-  a. Visit: [https://console.aws.amazon.com/billing/home?region=us-west-2#/account]
-  b. Check "IAM user/role access to billing information"
+    a. Visit: [https://console.aws.amazon.com/billing/home?region=us-west-2#/account]
+    b. Check "IAM user/role access to billing information"
 
 3. Activate MFA on root account
 
-  See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html?icmpid=docs_iam_console]
+    See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html?icmpid=docs_iam_console]
 
-  A touch-enabled hardware security module such as a Yubikey 4 is recommended
-  to greatly limit risk of leaking TOTP secret.
+    A touch-enabled hardware security module such as a Yubikey 4 is recommended
+    to greatly limit risk of leaking TOTP secret.
 
 4. Generate root Access Keys
 
-  See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html?icmpid=docs_iam_console#id_root-user_manage_add-key]
+    See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html?icmpid=docs_iam_console#id_root-user_manage_add-key]
 
 5. Bootstrap organization accounts and global users/roles/policies
 
@@ -46,7 +46,8 @@ required.
     ```
 
 6. Delete root Access Keys
-  See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html?icmpid=docs_iam_console#id_root-user_manage_add-key]
+
+    See: [http://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html?icmpid=docs_iam_console#id_root-user_manage_add-key]
 
 ### AWS User Setup
 

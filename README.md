@@ -82,13 +82,10 @@ account.
 
 ## Usage
 
-Initialize a session token via your MFA device:
+Initialize temporary credentials via your MFA device:
 
 ```
-aws sts get-session-token \
-  --serial-number arn-of-the-mfa-device \
-  --token-code code-from-token
-export AWS_SESSION_TOKEN=<Session-Token-as-in-Previous-Output>
+source scripts/aws-mfa.sh
 ```
 
 Change terraform configuration as desired and apply changes with:

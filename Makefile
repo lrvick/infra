@@ -3,22 +3,16 @@ EXECUTABLES = bash aws terraform jq kubectl
 K := $(foreach exec,$(EXECUTABLES),\
         $(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH)))
 
-clean:
-	aws cloudformation delete-stack --stack-name global
-
 install:
 	bash scripts/bootstrap-aws.sh
 
-get:
-	terraform get
+init-%:
+	bash scripts/terraform-env.sh $@ init
 
-init:
-	terraform init
+plan-%:
+	bash scripts/terraform-env.sh $@ plan
 
-terraform: prepare
-
-plan: get terraform
-
-apply: get terraform
+apply-%:
+	bash scripts/terraform-env.sh $@ apply
 
 .PHONY: clean install init plan apply

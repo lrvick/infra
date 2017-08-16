@@ -9,7 +9,8 @@ mfa_token="$2"
 user_name=$(aws iam get-user | jq -r '.[] .UserName')
 mfa_serial=$( \
 	aws iam list-virtual-mfa-devices \
-		| jq -r ".[] [] | select(.User.UserName==\"$user_name\") .SerialNumber" \
+		| jq -r \
+			".[] [] | select(.User.UserName==\"$user_name\") .SerialNumber" \
 )
 if [ "$account_name" != "root" ]; then
 	organizations=$(aws organizations list-accounts | jq -r '.[]')
@@ -32,7 +33,8 @@ else
 			--serial-number "$mfa_serial" \
 			--token-code "$mfa_token" \
 			--role-session-name "$user_name" \
-			--role-arn "arn:aws:iam::$account_id:role/OrganizationAccountAccessRole" \
+			--role-arn \
+				"arn:aws:iam::$account_id:role/OrganizationAccountAccessRole" \
 		| jq -r '.[]' \
 	)
 fi

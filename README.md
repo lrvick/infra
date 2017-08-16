@@ -82,14 +82,29 @@ account.
 
 ## Usage
 
-Initialize temporary credentials via your MFA device:
+### Common Operations
+
+Run "terraform plan" for the "staging" account:
+```
+make plan-staging
+```
+
+Run "terraform apply" for the "production" account:
+```
+make apply-production
+```
+
+### Direct AWS/terraform CLI access:
+
+Provide the desired account name and an mfa token to aws-mfa.sh:
 
 ```
-source scripts/aws-mfa.sh
+source scripts/aws-mfa.sh production 123456
 ```
 
-Change terraform configuration as desired and apply changes with:
+Change terraform configuration as desired and apply changes manually with:
 
 ```
-make apply
+cd terraform/accounts/root
+terraform apply
 ```

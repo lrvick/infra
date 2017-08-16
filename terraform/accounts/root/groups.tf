@@ -77,6 +77,9 @@ data "aws_iam_policy_document" "require_mfa" {
       "iam:ListAccountAliases",
       "iam:GetAccountPasswordPolicy",
       "iam:ListUsers",
+      "iam:GetUser",
+      "organizations:List*",
+      "organizations:Describe*",
     ]
     resources = ["*"]
   }
@@ -129,6 +132,7 @@ data "aws_iam_policy_document" "require_mfa" {
       "iam:ListVirtualMFADevices",
       "iam:ListMFADevices",
       "iam:ListUsers",
+      "iam:GetUser",
       "iam:ListAccountAliases",
       "iam:CreateVirtualMFADevice",
       "iam:DeactivateMFADevice",
@@ -142,6 +146,8 @@ data "aws_iam_policy_document" "require_mfa" {
       "iam:GetAccountSummary",
       "iam:GetLoginProfile",
       "iam:UpdateLoginProfile",
+      "organizations:List*",
+      "organizations:Describe*",
     ]
     resources = ["*"]
     condition = {

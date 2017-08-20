@@ -57,6 +57,16 @@ resource "aws_security_group_rule" "all_inbound_https" {
     cidr_blocks = ["0.0.0.0/0"]
 }
 
+resource "aws_security_group_rule" "all_inbound_custom" {
+    count = "${length(var.all_inbound_custom)}"
+    security_group_id = "${aws_security_group.sg.id}"
+    type = "ingress"
+    from_port = "${element(var.all_inbound_custom, count.index)}"
+    to_port = "${element(var.all_inbound_custom, count.index)}"
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+}
+
 resource "aws_security_group_rule" "all_outbound" {
     count = "${var.all_outbound}"
     security_group_id = "${aws_security_group.sg.id}"

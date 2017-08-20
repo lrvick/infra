@@ -9,6 +9,7 @@ variable "vpc_id" {
 variable "all_internal" { default = false }
 variable "all_inbound" { default = false }
 variable "all_outbound" { default = false }
+variable "all_inbound_custom" { default = [] }
 variable "all_inbound_ssh" { default = false }
 variable "all_inbound_http" { default = false }
 variable "all_inbound_https" { default = false }

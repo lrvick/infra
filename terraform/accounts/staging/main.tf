@@ -11,6 +11,10 @@ provider "aws" {
  	region = "us-west-2"
 }
 
+resource "aws_iam_account_alias" "alias" {
+    account_alias = "lrvick-staging"
+}
+
 resource "aws_route53_zone" "personal" {
     name = "lrvick-stg.net"
     tags {

@@ -11,6 +11,10 @@ provider "aws" {
  	region = "us-west-2"
 }
 
+resource "aws_iam_account_alias" "alias" {
+    account_alias = "lrvick-production"
+}
+
 resource "aws_route53_zone" "personal" {
     name = "lrvick.net"
     tags {
@@ -68,7 +72,7 @@ module "vpc" {
 
 resource "aws_key_pair" "admin" {
     key_name = "admin"
-    public_key = "${file("../../files/lrvick.pub")}"
+    public_key = "${file("../../files/lrvick_ssh.pub")}"
 }
 
 #module "personal-website" {

@@ -40,10 +40,10 @@ resource "aws_route53_record" "base" {
 
 resource "aws_route53_record" "keybase" {
     zone_id = "${aws_route53_zone.personal.zone_id}"
-    name = "@"
+    name = "lrvick.net"
     type = "TXT"
     ttl = "300"
-    records = ["keybase-site-verification=j7Z3S6y4ynbSXqi68QSLGErhBeRMrRQi_EIIPkcU3HE"]
+    records = ["keybase-site-verification=LyzhpqOMwzciC47VCWjWGszpCDzzvDw4fG7OK0P3zws"]
 }
 
 resource "aws_route53_record" "mx" {

@@ -9,6 +9,10 @@ install:
 init-%:
 	@bash scripts/terraform-env.sh $@
 
+get-%:
+	@bash scripts/terraform-env.sh $@
+
+
 plan-%:
 	@bash scripts/terraform-env.sh $@
 

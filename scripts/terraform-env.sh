@@ -16,4 +16,5 @@ cd "terraform/accounts/${account_name}" || { \
 	echo "cd failed" && exit; \
 }
 
+terraform get
 terraform "${action}"

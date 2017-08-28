@@ -30,7 +30,7 @@ resource "aws_key_pair" "lrvick" {
     public_key = "${file("../../files/lrvick_ssh.pub")}"
 }
 
-#module "personal-website" {
-#    source = "modules/s3_cloudfront_site"
-#    domain = "lrvick.net"
-#}
+module "personal-website" {
+    source = "../../modules/s3_cloudfront_site"
+    domain = "lrvick.net"
+}

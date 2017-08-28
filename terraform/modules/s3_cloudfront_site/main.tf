@@ -38,15 +38,17 @@ resource "aws_route53_record" "redirect" {
 
 data "aws_iam_policy_document" "assets" {
     statement {
-        actions = ["s3:GetObject"]
-        resources = ["${aws_s3_bucket.assets.arn}/*"]
+        sid = "PublicReadAccess",
         principals {
-            type = "AWS"
-            identifiers = ["${aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn}"]
-        }
+            type = "AWS",
+            identifiers = ["*"]
+        },
+        effect = "Allow",
+        actions = ["s3:GetObject"],
+        resources = ["${aws_s3_bucket.assets.arn}/*"],
         condition {
-            test = "StringEquals"
-            variable = "aws:UserAgent"
+            test = "StringEquals",
+            variable = "aws:UserAgent",
             values = ["CloudFront"]
         }
     }

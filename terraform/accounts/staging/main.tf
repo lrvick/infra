@@ -36,3 +36,10 @@ module "personal-website" {
     source = "../../modules/s3_cloudfront_site"
     domain = "lrvick-stg.net"
 }
+
+module "k8s" {
+    source = "../../modules/k8s"
+    region = "${aws.region}"
+    base_domain = "${aws_route_53_zone.personal.name}"
+    vpc_id = "${vpc.vpc_id}"
+}

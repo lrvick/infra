@@ -10,7 +10,7 @@ of personal or company needs.
 Mostly I am documenting this for my future self, because that guy forgets
 everything and needs every little detail laid out for him.
 
-## Setup
+## Setup Steps
 
 ### AWS Account Setup
 

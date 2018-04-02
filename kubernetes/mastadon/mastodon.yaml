@@ -1,0 +1,431 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mastodon
+  labels:
+    name: mastodon
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: mastodon-ingress
+  namespace: mastodon
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/ssl-services: "mastodon"
+spec:
+  tls:
+    - hosts:
+      - example.com
+      secretName: tls-certificate
+  rules:
+  - host: example.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: mastodon
+          servicePort: 3000
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: default-http
+  namespace: mastodon
+spec:
+  selector:
+    app: default-http
+  ports:
+    - name: default-http
+      port: 80
+      targetPort: default-http
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mastodon
+  namespace: mastodon
+spec:
+  selector:
+    app: mastodon
+  ports:
+  - name: web
+    port: 3000
+    targetPort: web
+  - name: streaming
+    port: 4000
+    targetPort: streaming
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: mastodon
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: redis
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: mastodon
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: postgres
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: mastodon
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        k8s-app: nginx-ingress-lb
+    spec:
+      containers:
+        - args:
+            - /nginx-ingress-controller
+            - "--default-backend-service=$(POD_NAMESPACE)/default-http"
+            - "--default-ssl-certificate=$(POD_NAMESPACE)/tls-certificate"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          image: "gcr.io/google_containers/nginx-ingress-controller:0.9.0-beta.5"
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          name: nginx-ingress-controller
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+            - containerPort: 443
+              name: https
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/nginx-ssl/dhparam
+              name: tls-dhparam-vol
+      terminationGracePeriodSeconds: 60
+      volumes:
+        - name: tls-dhparam-vol
+          secret:
+            secretName: tls-dhparam
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: default-http
+  namespace: mastodon
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: default-http
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: default-http
+        image: gcr.io/google_containers/defaultbackend:1.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        ports:
+        - name: default-http
+          containerPort: 8080
+        resources:
+          limits:
+            cpu: 10m
+            memory: 20Mi
+          requests:
+            cpu: 10m
+            memory: 20Mi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mastodon
+  namespace: mastodon
+spec:
+  selector:
+    matchLabels:
+      app: mastodon
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mastodon
+    spec:
+      containers:
+      - name: web
+        image: tootsuite/mastodon:v2.3.3
+        command: [
+          "bundle", "exec", "rails", "s",
+          "-p", "3000",
+          "-b", "0.0.0.0"
+        ]
+        ports:
+        - name: web
+          containerPort: 3000
+        resources:
+          requests:
+            memory: 350Mi
+            cpu: 100m
+        envFrom:
+        - configMapRef:
+            name: mastodon-config
+        - secretRef:
+            name: mastodon-secrets
+      - name: streaming
+        image: tootsuite/mastodon:v2.3.3
+        command: [ "yarn", "start" ]
+        ports:
+        - name: streaming
+          containerPort: 4000
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 25m
+        envFrom:
+        - configMapRef:
+            name: mastodon-config
+        - secretRef:
+            name: mastodon-secrets
+      - name: sidekiq
+        image: tootsuite/mastodon:v2.3.3
+        command: [
+          "bundle", "exec", "sidekiq",
+            "-q", "default",
+            "-q", "mailers",
+            "-q", "pull",
+            "-q", "push"
+        ]
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+        envFrom:
+        - configMapRef:
+            name: mastodon-config
+        - secretRef:
+            name: mastodon-secrets
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: postgres
+  namespace: mastodon
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:alpine
+        env:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mastodon-secrets
+                key: DB_PASS
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+        ports:
+          - name: postgres
+            containerPort: 5432
+        volumeMounts:
+          - mountPath: /var/lib/postgresql/data
+            name: postgres-volume
+      volumes:
+      - name: postgres-volume
+        persistentVolumeClaim:
+          claimName: postgres-volume-claim
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: redis
+  namespace: mastodon
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  replicas: 1
+  template:
+    metadata:
+      namespace: mastodon
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 50m
+        ports:
+        - name: redis
+          containerPort: 6379
+        volumeMounts:
+        - name: redis-volume
+          mountPath: /data
+      volumes:
+      - name: redis-volume
+        persistentVolumeClaim:
+          claimName: redis-volume-claim
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mastodon-config
+  namespace: mastodon
+data:
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  DB_HOST: postgres
+  DB_USER: postgres
+  DB_NAME: mastodon
+  DB_PORT: "5432"
+  LOCAL_DOMAIN: example.com
+  LOCAL_HTTPS: "true"
+  SINGLE_USER_MODE: "true"
+  DEFAULT_LOCALE: en
+  SMTP_AUTH_METHOD: plain
+  SMTP_OPENSSL_VERIFY_MODE: peer
+  SMTP_ENABLE_STARTTLS_AUTO: "true"
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mastodon-secrets
+  namespace: mastodon
+type: Opaque
+data:
+  OTP_SECRET: ZGVmYXVsdC1pbnNlY3VyZS1zZWNyZXQ=
+  SECRET_KEY_BASE: ZGVmYXVsdC1pbnNlY3VyZS1zZWNyZXQ=
+  PAPERCLIP_SECRET: ZGVmYXVsdC1pbnNlY3VyZS1zZWNyZXQ=
+  DB_PASS: ZGVmYXVsdC1pbnNlY3VyZS1zZWNyZXQ=
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: redis-volume
+  namespace: mastodon
+  labels:
+    name: redis-volume
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  gcePersistentDisk:
+    pdName: "redis-volume"
+    fsType: "ext4"
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: postgres-volume
+  namespace: mastodon
+  labels:
+    name: postgres-volume
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  gcePersistentDisk:
+    pdName: "postgres-volume"
+    fsType: "ext4"
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: redis-volume-claim
+  namespace: mastodon
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-volume-claim
+  namespace: mastodon
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+

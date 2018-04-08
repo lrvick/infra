@@ -87,6 +87,13 @@ spec:
       labels:
         app: mastodon
     spec:
+      volumes:
+      - name: mastodon-assets
+        emptyDir: {}
+      - name: mastodon-packs
+        emptyDir: {}
+      - name: mastodon-system
+        emptyDir: {}
       containers:
       - name: web
         image: tootsuite/mastodon:v2.3.3
@@ -117,21 +124,6 @@ spec:
         volumeMounts:
           - mountPath: /mastodon/public/system
             name: mastodon-system
-      - name: streaming
-        image: tootsuite/mastodon:v2.3.3
-        command: [ "yarn", "start" ]
-        ports:
-        - name: streaming
-          containerPort: 4000
-        resources:
-          requests:
-            memory: 32Mi
-            cpu: 25m
-        envFrom:
-        - configMapRef:
-            name: mastodon-config
-        - secretRef:
-            name: mastodon-secrets
       - name: sidekiq
         image: tootsuite/mastodon:v2.3.3
         command: [
@@ -159,18 +151,26 @@ spec:
         volumeMounts:
           - mountPath: /mastodon/public/system
             name: mastodon-system
+      - name: streaming
+        image: tootsuite/mastodon:v2.3.3
+        command: [ "yarn", "start" ]
+        ports:
+        - name: streaming
+          containerPort: 4000
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 25m
+        envFrom:
+        - configMapRef:
+            name: mastodon-config
+        - secretRef:
+            name: mastodon-secrets
       - name: smtpd
         image: wodby/opensmtpd:6-1.3.0
         securityContext:
           capabilities:
             add: ["NET_ADMIN"]
-      volumes:
-      - name: mastodon-assets
-        emptyDir: {}
-      - name: mastodon-packs
-        emptyDir: {}
-      - name: mastodon-system
-        emptyDir: {}
 
 ---
 

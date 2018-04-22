@@ -38,9 +38,9 @@ resource "aws_ebs_volume" "chat" {
 }
 
 resource "aws_volume_attachment" "chat" {
-  device_name = "/dev/sdh"
-  volume_id   = "${aws_ebs_volume.chat.id}"
-  instance_id = "${aws_instance.chat.id}"
+    device_name = "/dev/sdh"
+    volume_id = "${aws_ebs_volume.chat.id}"
+    instance_id = "${aws_instance.chat.id}"
 }
 
 resource "aws_instance" "chat" {

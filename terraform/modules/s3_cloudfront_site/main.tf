@@ -1,9 +1,3 @@
-// ACM only works in us-east-1
-provider "aws" {
- 	region = "us-east-1"
-    alias = "use1"
-}
-
 data "aws_route53_zone" "selected" {
     name = "${replace(var.domain, "/^.*\\.([^\\.]+)\\.([^\\.]+)$/", "$1.$2.")}"
 }

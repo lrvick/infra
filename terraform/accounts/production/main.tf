@@ -1,14 +1,38 @@
 terraform {
-    backend "s3" {
-        bucket = "lrvick-production-terraform"
-        key    = "state/production.tfstate"
-        region = "us-west-2"
-        lock_table = "lrvick-production-terraform"
-    }
+  required_version = "~> 0.11.7"
+  backend "s3" {
+    bucket = "lrvick-production-terraform"
+    key = "state/production.tfstate"
+    region = "us-west-2"
+    dynamodb_table = "lrvick-production-terraform"
+    role_arn = "arn:aws:iam::150259197776:role/OrganizationAccountAccessRole"
+  }
 }
 
 provider "aws" {
- 	region = "us-west-2"
+  region = "us-west-2"
+  allowed_account_ids = ["150259197776"]
+  assume_role {
+    role_arn = "arn:aws:iam::150259197776:role/OrganizationAccountAccessRole"
+  }
+}
+
+provider "aws" {
+  region = "us-west-2"
+  alias = "usw2"
+  allowed_account_ids = ["150259197776"]
+  assume_role {
+    role_arn = "arn:aws:iam::150259197776:role/OrganizationAccountAccessRole"
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+  alias = "use1"
+  allowed_account_ids = ["150259197776"]
+  assume_role {
+    role_arn = "arn:aws:iam::150259197776:role/OrganizationAccountAccessRole"
+  }
 }
 
 resource "aws_iam_account_alias" "alias" {
@@ -16,7 +40,8 @@ resource "aws_iam_account_alias" "alias" {
 }
 
 module "vpc" {
-    source = "../../modules/vpc"
+    source = "terraform-aws-modules/vpc/aws"
+    version = "1.30.0"
     name = "production"
     cidr = "10.0.0.0/16"
     public_subnets = ["10.0.103.0/24", "10.0.104.0/24", "10.0.105.0/24"]
@@ -27,7 +52,7 @@ module "vpc" {
 
 resource "aws_key_pair" "lrvick" {
     key_name = "lrvick"
-    public_key = "${file("../../files/lrvick_ssh.pub")}"
+    public_key = "${file("../../../keys/ssh/lrvick.pub")}"
 }
 
 module "personal-website" {

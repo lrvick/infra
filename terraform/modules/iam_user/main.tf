@@ -7,7 +7,7 @@ resource "aws_iam_user_login_profile" "user" {
   user = "${aws_iam_user.user.name}",
   pgp_key = "${base64encode(file(var.pgp_key))}"
   password_reset_required = true
-  password_length = "20"
+  password_length = "${var.password_length}"
 }
 
 resource "aws_iam_access_key" "user" {

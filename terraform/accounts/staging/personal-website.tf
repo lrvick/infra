@@ -18,12 +18,12 @@ data "aws_iam_policy_document" "personal_website_lambda" {
     statement {
         effect = "Allow",
         actions = ["s3:ListBucket"],
-        resources = ["${module.personal-website.assets_bucket}"],
+        resources = ["arn:aws:s3:::${module.personal-website.assets_bucket}"],
     }
     statement {
         effect = "Allow",
         actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-        resources = ["${module.personal-website.assets_bucket}/*"],
+        resources = ["arn:aws:s3:::${module.personal-website.assets_bucket}/*"],
     }
 }
 
@@ -44,7 +44,7 @@ data "archive_file" "personal_website_lambda" {
 
 resource "aws_lambda_function" "personal_website" {
     function_name = "rant_github_s3_uploader"
-    filename = "rant_github_s3_uploader.zip"
+    filename = "../../../.cache/lambda/rant_github_s3_uploader.zip"
     source_code_hash = "${data.archive_file.personal_website_lambda.output_base64sha256}"
     role = "${aws_iam_role.personal_website_lambda.arn}"
     description = "Rant Github S3 Uploader for Personal Website"

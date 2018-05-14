@@ -11,7 +11,10 @@ data "aws_iam_policy_document" "personal_website_lambda_role" {
         actions = ["sts:AssumeRole"],
         principals {
             type = "Service",
-            identifiers = ["lambda.amazonaws.com"]
+            identifiers = [
+                "lambda.amazonaws.com",
+                "apigateway.amazonaws.com"
+            ]
         },
     }
 }
@@ -44,6 +47,12 @@ data "archive_file" "personal_website_lambda" {
     output_path = "../../../.cache/lambda/rant_github_s3_uploader.zip"
 }
 
+resource "random_string" "personal_website_webhook_secret" {
+  length = 20
+  special = true
+  override_special = "/@\" "
+}
+
 resource "aws_lambda_function" "personal_website" {
     function_name = "rant_github_s3_uploader"
     filename = "../../../.cache/lambda/rant_github_s3_uploader.zip"
@@ -54,66 +63,67 @@ resource "aws_lambda_function" "personal_website" {
     runtime = "python3.6"
     environment {
         variables = {
+            GIT_REPO = "git@gith"
             GIT_BRANCH = "staging",
             S3_BUCKET = "${module.personal-website.assets_bucket}",
             TRUSTED_KEYS = "E90A401336C8AAA9"
+            WEBHOOK_SECRET = "${random_string.personal_website_webhook_secret.result}"
         }
     }
 }
 
-## Create SNS topic with permission to trigger lambda function
+# Create AWS API Gateway endpoint that can trigger lambda function
 
-resource "aws_sns_topic" "personal_website_lambda" {
-    name = "personal_website_lambda"
+resource "aws_api_gateway_rest_api" "personal_website" {
+    name = "personal_website"
+    description = "Gateway to trigger static site deployment from git"
 }
 
-resource "aws_sns_topic_subscription" "personal_website_lambda" {
-    topic_arn = "${aws_sns_topic.personal_website_lambda.arn}"
-    protocol = "lambda"
-    endpoint = "${aws_lambda_function.personal_website.arn}"
+resource "aws_api_gateway_resource" "personal_website" {
+    rest_api_id = "${aws_api_gateway_rest_api.personal_website.id}"
+    parent_id = "${aws_api_gateway_rest_api.personal_website.root_resource_id}"
+    path_part = "hook"
 }
 
-resource "aws_lambda_permission" "with_sns" {
-    statement_id = "AllowExecutionFromSNS"
-    action = "lambda:InvokeFunction"
+resource "aws_api_gateway_method" "personal_website" {
+    rest_api_id = "${aws_api_gateway_rest_api.personal_website.id}"
+    resource_id = "${aws_api_gateway_resource.personal_website.id}"
+    http_method = "POST"
+    authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "personal_website" {
+    rest_api_id = "${aws_api_gateway_rest_api.personal_website.id}"
+    resource_id = "${aws_api_gateway_resource.personal_website.id}"
+    http_method = "${aws_api_gateway_method.personal_website.http_method}"
+    type = "AWS_PROXY"
+    uri = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${aws_lambda_function.personal_website.function_name}/invocations"
+    integration_http_method = "POST"
+}
+
+resource "aws_api_gateway_deployment" "personal_website" {
+  depends_on = [
+    "aws_api_gateway_method.personal_website",
+    "aws_api_gateway_integration.personal_website",
+  ]
+  rest_api_id = "${aws_api_gateway_rest_api.personal_website.id}"
+  stage_name = "prod"
+}
+
+resource "aws_lambda_permission" "personal_website" {
     function_name = "${aws_lambda_function.personal_website.arn}"
-    principal = "sns.amazonaws.com"
-    source_arn = "${aws_sns_topic.personal_website_lambda.arn}"
+    statement_id = "AllowExecutionFromApiGateway"
+    action = "lambda:InvokeFunction"
+    principal = "apigateway.amazonaws.com"
+    source_arn = "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.personal_website.id}/*/${aws_api_gateway_method.personal_website.http_method}${aws_api_gateway_resource.personal_website.path}"
 }
 
-## Create user/credentials for VCS provider with ability to notify SNS
+## Return values needed to provide to deployment notifier
 
-resource "aws_iam_user" "personal_website_notify" {
-    name = "personal-website-notify"
+output "personal_website_deploy_webhook_url" {
+    value = "https://${aws_api_gateway_deployment.personal_website.rest_api_id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_api_gateway_deployment.personal_website.stage_name}${aws_api_gateway_resource.personal_website.path}"
 }
 
-resource "aws_iam_access_key" "personal_website_notify" {
-    user = "${aws_iam_user.personal_website_notify.name}"
-    pgp_key = "${base64encode(file("../../../keys/pgp/lrvick.key"))}"
-}
-
-resource "aws_iam_user_policy" "personal_website_notify" {
-    name = "personal_website_notify"
-    user = "${aws_iam_user.personal_website_notify.name}"
-    policy = "${data.aws_iam_policy_document.personal_website_lambda_notify.json}"
-}
-
-data "aws_iam_policy_document" "personal_website_lambda_notify" {
-    statement {
-        effect = "Allow",
-        actions = ["sns:Publish"],
-        resources = ["${aws_sns_topic.personal_website_lambda.arn}"]
-    }
-}
-
-output "personal_website_notify_sns_topic" {
-  value = "${aws_sns_topic.personal_website_lambda.arn}"
-}
-
-output "personal_website_notify_user_id" {
-  value = "${aws_iam_access_key.personal_website_notify.id}"
-}
-
-output "personal_website_notify_user_key" {
-  value = "${aws_iam_access_key.personal_website_notify.encrypted_secret}"
+output "personal_website_deploy_webhook_secret" {
+    value = "${random_string.personal_website_webhook_secret.result}"
 }

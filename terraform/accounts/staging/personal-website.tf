@@ -52,6 +52,7 @@ resource "aws_lambda_function" "personal_website" {
     runtime = "python3.6"
     environment {
         variables = {
+            GIT_BRANCH = "staging",
             S3_BUCKET = "${module.personal-website.assets_bucket}",
             TRUSTED_KEYS = "E90A401336C8AAA9"
         }

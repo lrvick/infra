@@ -3,6 +3,8 @@ module "personal-website" {
     domain = "lrvick-stg.net"
 }
 
+## Create Lambda function with ability to deploy to cloudfronted s3 bucket
+
 data "aws_iam_policy_document" "personal_website_lambda_role" {
     statement {
         effect = "Allow"
@@ -59,6 +61,8 @@ resource "aws_lambda_function" "personal_website" {
     }
 }
 
+## Create SNS topic with permission to trigger lambda function
+
 resource "aws_sns_topic" "personal_website_lambda" {
     name = "personal_website_lambda"
 }
@@ -75,4 +79,41 @@ resource "aws_lambda_permission" "with_sns" {
     function_name = "${aws_lambda_function.personal_website.arn}"
     principal = "sns.amazonaws.com"
     source_arn = "${aws_sns_topic.personal_website_lambda.arn}"
+}
+
+## Create user/credentials for VCS provider with ability to notify SNS
+
+resource "aws_iam_user" "personal_website_notify" {
+    name = "personal-website-notify"
+}
+
+resource "aws_iam_access_key" "personal_website_notify" {
+    user = "${aws_iam_user.personal_website_notify.name}"
+    pgp_key = "${base64encode(file("../../../keys/pgp/lrvick.key"))}"
+}
+
+resource "aws_iam_user_policy" "personal_website_notify" {
+    name = "personal_website_notify"
+    user = "${aws_iam_user.personal_website_notify.name}"
+    policy = "${data.aws_iam_policy_document.personal_website_lambda_notify.json}"
+}
+
+data "aws_iam_policy_document" "personal_website_lambda_notify" {
+    statement {
+        effect = "Allow",
+        actions = ["sns:Publish"],
+        resources = ["${aws_sns_topic.personal_website_lambda.arn}"]
+    }
+}
+
+output "personal_website_notify_sns_topic" {
+  value = "${aws_sns_topic.personal_website_lambda.arn}"
+}
+
+output "personal_website_notify_user_id" {
+  value = "${aws_iam_access_key.personal_website_notify.id}"
+}
+
+output "personal_website_notify_user_key" {
+  value = "${aws_iam_access_key.personal_website_notify.encrypted_secret}"
 }

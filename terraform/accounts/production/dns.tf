@@ -10,14 +10,6 @@ resource "aws_route53_record" "wildcard" {
     records = ["104.207.150.22"]
 }
 
-resource "aws_route53_record" "base" {
-    zone_id = "${aws_route53_zone.personal.zone_id}"
-    name = "${aws_route53_zone.personal.name}"
-    type = "A"
-    ttl = "300"
-    records = ["104.207.150.22"]
-}
-
 resource "aws_route53_record" "keybase" {
     zone_id = "${aws_route53_zone.personal.zone_id}"
     name = "lrvick.net"

@@ -1,0 +1,49 @@
+{
+    "_meta": {
+        "hash": {
+            "sha256": "c8e5e7a72af21487fa0f798a59d48524c487782cb0ae1b774ef32c91937b9173"
+        },
+        "pipfile-spec": 6,
+        "requires": {
+            "python_version": "3.6"
+        },
+        "sources": [
+            {
+                "name": "pypi",
+                "url": "https://pypi.org/simple",
+                "verify_ssl": true
+            }
+        ]
+    },
+    "default": {
+        "certifi": {
+            "hashes": [
+                "sha256:13e698f54293db9f89122b0581843a782ad0934a4fe0172d2a980ba77fc61bb7",
+                "sha256:9fa520c1bacfb634fa7af20a76bcbd3d5fb390481724c597da32c719a7dca4b0"
+            ],
+            "version": "==2018.4.16"
+        },
+        "dulwich": {
+            "hashes": [
+                "sha256:c51e10c260543240e0806052af046e1a78b98cbe1ac1ef3880a78d2269e09da4"
+            ],
+            "index": "pypi",
+            "version": "==0.19.2"
+        },
+        "gpg": {
+            "hashes": [
+                "sha256:349214a866c84aa548bc35ed14eccd2ec9085b3958d5753a63a19a71a1f523ca"
+            ],
+            "index": "pypi",
+            "version": "==1.10.0"
+        },
+        "urllib3": {
+            "hashes": [
+                "sha256:06330f386d6e4b195fbfc736b297f58c5a892e4440e54d294d7004e3a9bbea1b",
+                "sha256:cc44da8e1145637334317feebd728bd869a35285b93cbb4cca2577da7e62db4f"
+            ],
+            "version": "==1.22"
+        }
+    },
+    "develop": {}
+}

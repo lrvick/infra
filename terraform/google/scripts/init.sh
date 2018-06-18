@@ -2,7 +2,7 @@
 set -e
 
 dir=$(dirname "$0")
-google_cloud_sdk=$(bash "${dir}/google-cloud-sdk.sh")
+google_cloud_sdk=$(bash "${dir}/terraform_google_cloud_sdk.sh" | jq -r ".path")
 PATH="$PATH:${google_cloud_sdk}/bin"
 
 organization_id="208307739756" # gcloud organizations list

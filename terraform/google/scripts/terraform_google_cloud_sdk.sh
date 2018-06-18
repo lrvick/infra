@@ -30,11 +30,14 @@ if [ ! -f "$gcloud" ]; then
 	)"
 	echo "$cloud_sdk_hash"
 
-	set -x
 	[[ "${cloud_sdk_hashes[${os}_${arch}]}" == "$cloud_sdk_hash" ]] || \
 		{ ( >&2 echo "Invalid hash for ${cloud_sdk_file}"); exit 1; }
 	tar -xf "${download_dir}/${cloud_sdk_file}" -C "${release_dir}"
+	"${release_dir}/google-cloud-sdk/bin/gcloud" \
+		components install --quiet kubectl
+	"${release_dir}/google-cloud-sdk/bin/gcloud" \
+		components install --quiet helm
 fi
 
-echo "${release_dir}/google-cloud-sdk"
-
+path="${release_dir}/google-cloud-sdk"
+jq -n --arg path "$path" '{"path":$path}'

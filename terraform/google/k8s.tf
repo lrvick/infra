@@ -3,7 +3,7 @@ resource "google_container_cluster" "primary" {
   zone = "us-west1-a"
   min_master_version = "1.10.4-gke.0"
   node_version = "1.10.4-gke.0"
-  initial_node_count = 3
+  initial_node_count = 1
   additional_zones = [ "us-west1-b", "us-west1-c" ]
   node_config {
     machine_type = "n1-standard-1"

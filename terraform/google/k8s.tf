@@ -1,6 +1,8 @@
 resource "google_container_cluster" "primary" {
   name = "lrvick-production"
   zone = "us-west1-a"
+  min_master_version = "1.10.4-gke.0"
+  node_version = "1.10.4-gke.0"
   initial_node_count = 3
   additional_zones = [ "us-west1-b", "us-west1-c" ]
   node_config {
@@ -73,7 +75,7 @@ locals {
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: tiller-admin
+  name: tiller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -86,7 +88,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: concourse-admin
+  name: concourse
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -98,7 +100,7 @@ subjects:
 EOF
 }
 
-resource "null_resource" "kubernetes_resource" {
+resource "null_resource" "kubernetes_rbac_apply" {
   triggers {
     configuration = "${local.k8s_rbac_config}",
     cluster = "${local.k8s_host}"
@@ -107,16 +109,7 @@ resource "null_resource" "kubernetes_resource" {
     command = "mkdir -p ${local.k8s_temp_dir}"
   }
   provisioner "local-exec" {
-    command = "touch ${local.k8s_temp_dir}/kubeconfig"
-  }
-  provisioner "local-exec" {
-    command = "echo '${local.k8s_cluster_ca_certificate}' > ${local.k8s_temp_dir}/ca.pem"
-  }
-  provisioner "local-exec" {
-    environment = {
-      KUBECONFIG="${local.k8s_temp_dir}/kubeconfig"
-    }
-    command = "${local.cloud_sdk_path}/gcloud container clusters --region=us-west1-a get-credentials lrvick-production"
+    command = "echo \"${data.template_file.kubeconfig.rendered}\" > ${local.k8s_temp_dir}/kubeconfig"
   }
   provisioner "local-exec" {
     command = "${local.cloud_sdk_path}/kubectl apply --server=${local.k8s_host} --kubeconfig=${local.k8s_temp_dir}/kubeconfig -f - <<EOF\n${local.k8s_rbac_config}\nEOF"

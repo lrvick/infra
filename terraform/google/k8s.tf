@@ -17,6 +17,7 @@ resource "google_container_cluster" "primary" {
 }
 
 locals {
+  k8s_name = "${google_container_cluster.primary.name}"
   k8s_host = "https://${google_container_cluster.primary.endpoint}"
   k8s_username = "${google_container_cluster.primary.master_auth.0.username}"
   k8s_password = "${google_container_cluster.primary.master_auth.0.password}"
@@ -40,6 +41,22 @@ resource "kubernetes_service_account" "tiller" {
     namespace = "kube-system"
   }
 }
+
+data "template_file" "kubeconfig" {
+  template = "${file("templates/kubeconfig.tpl")}"
+  vars {
+    cluster_name = "${local.k8s_name}"
+    certificate_authority_data = "${base64encode(local.k8s_cluster_ca_certificate)}"
+    server = "${local.k8s_host}"
+    username = "${local.k8s_username}"
+    password = "${local.k8s_password}"
+  }
+}
+
+output "kubeconfig" {
+  value = "${data.template_file.kubeconfig.rendered}"
+}
+
 
 # From here we get into RBAC bootstrapping which does not -yet- have any native
 # support in terraform. See PR:

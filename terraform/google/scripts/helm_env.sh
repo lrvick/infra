@@ -87,7 +87,7 @@ fi
 source scripts/kube_env.sh
 
 HELM_HOME="$(mktemp -d -p /dev/shm/)"
-cp "${cert_dir}/ca.cert.pem" "${HELM_HOME}/"
-cp "${cert_dir}/helm.cert.pem" "${HELM_HOME}/"
-gpg -d "${cert_dir}/helm.key.pem.asc" > "${HELM_HOME}/helm.key.pem"
+cp "${cert_dir}/ca.cert.pem" "${HELM_HOME}/ca.pem"
+cp "${cert_dir}/helm.cert.pem" "${HELM_HOME}/cert.pem"
+gpg -d "${cert_dir}/helm.key.pem.asc" > "${HELM_HOME}/key.pem"
 export HELM_HOME

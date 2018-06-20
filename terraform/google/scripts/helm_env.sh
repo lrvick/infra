@@ -79,6 +79,9 @@ if [ -f "${cert_dir}/tiller.key.pem" ]; then
 		--tls-ca-cert "${cert_dir}/ca.cert.pem" \
 		--tiller-tls-cert "${cert_dir}/tiller.cert.pem" \
 		--tiller-tls-key "${cert_dir}/tiller.key.pem"
+	kubectl \
+		-n kube-system patch deployment tiller-deploy \
+		-p '{"spec": {"template": {"spec": {"automountServiceAccountToken": true}}}}'
 	rm "${cert_dir}/ca.key.pem"
 	rm "${cert_dir}/tiller.key.pem"
 	rm "${cert_dir}/helm.key.pem"

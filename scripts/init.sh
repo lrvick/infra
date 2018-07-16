@@ -67,3 +67,7 @@ gcloud organizations add-iam-policy-binding ${organization_id} \
 gcloud organizations add-iam-policy-binding ${organization_id} \
 	--member serviceAccount:terraform@${tf_admin}.iam.gserviceaccount.com \
 	--role roles/container.admin
+
+gcloud organizations add-iam-policy-binding ${organization_id} \
+	--member serviceAccount:terraform@${tf_admin}.iam.gserviceaccount.com \
+	--role roles/storage.admin

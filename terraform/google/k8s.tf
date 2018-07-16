@@ -119,3 +119,8 @@ resource "null_resource" "kubernetes_rbac_apply" {
     when = "destroy"
   }
 }
+
+resource "google_storage_bucket" "helm-repo" {
+  name = "lrvick-helm-repo"
+  location = "US"
+}

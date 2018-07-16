@@ -1,0 +1,24 @@
+domain: "weechat.local"
+
+image:
+  registry: docker.io
+  repository: lrvick/weechat
+  tag: 0.1.20
+  pullPolicy: IfNotPresent
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 20Gi
+  subPath: "weechat-home"
+  mountPath: /home
+
+resources:
+  requests:
+    memory: 512m
+    cpu: 100m
+
+weechat:
+  user: "lrvick"
+  timezone: "America/Los_Angeles"
+  authorizedKeys: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDDy6rbDOrFwvmLon/mc8RTe72oLRrPJzeEWC3oF9qv1UpszV19exD998Q8NBZp7oSuewIH+FZ4cyZoOCp06DOFDjhlHvrIj1UFN7QiEExakxSQUBbyzfPMPrQe4Ct3WVIN7igk7H+J5rT/eOg3wloLHUh/HUUisYb/x2ipEoAqgq6n3bfKR832MN63Ox0xJj2jcxFEvfW+d65mutPaTxZRkXwKUnqZA14fadVx0a087GJvoJz2OUFCiNkLUr5IhS2Mz62MakUs//z+ihk8UcoCUKWMzN4txTLFJTUqBA43/tNSI0gkp9/gACLpUGAQ53EtFXh475V6h3XoNkVCz+lsKKS/ymK7QwIYJMDoCywBpdd+YPhoTHCUAsatgBn/+AzK8Qnu1w5Ts22aQX/uIdKoB5cYOt+J0OMSWv/OhYY74P4koliasQxFtZviJgKg3IwSTen/XBOwBD5SGiG3EfcpVtj5O3Bg6qOvmX0L5uLQ/Ggg9+C903sRCn1RjlUZo/bKGVt/+z8Y5XmENlHWF4eQgDanL7Dz62hvJbIPcSYdCPoZj66t81OP721LD4T5pF/rr+hivZLAOBRbDUMBwRXw+Xjd1LBQPscBJv7eW5NvI23h1mIrguZ+qfutRQnT8ZhFOI06vBy6uqgy6qQZ272wKrA27ODk2tKPDKJypZm9Lw=="

@@ -82,6 +82,18 @@ if [ -f "${cert_dir}/tiller.key.pem" ]; then
 	kubectl \
 		-n kube-system patch deployment tiller-deploy \
 		-p '{"spec": {"template": {"spec": {"automountServiceAccountToken": true}}}}'
+	cat > /tmp/concourse.yaml <<-EOF
+	concourse:
+	  password: $(openssl rand -base64 42)
+	  baggageclaimDriver: overlay
+	web:
+	  service:
+	    type: LoadBalancer
+	EOF
+	helm install stable/concourse \
+		--name concourse \
+		-f /tmp/concourse.yaml \
+		--version 0.10.0
 	rm "${cert_dir}/ca.key.pem"
 	rm "${cert_dir}/tiller.key.pem"
 	rm "${cert_dir}/helm.key.pem"
